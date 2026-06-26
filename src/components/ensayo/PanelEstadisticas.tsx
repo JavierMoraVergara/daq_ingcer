@@ -23,16 +23,14 @@ export function PanelEstadisticas({
 
   if (columnas.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow p-4">
-        <h3 className="text-sm font-medium text-gray-600 mb-2">Estadísticas</h3>
+      <div>
         <p className="text-xs text-gray-400">Sin datos suficientes</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow p-4 overflow-x-auto">
-      <h3 className="text-sm font-medium text-gray-600 mb-2">Estadísticas</h3>
+    <div className="overflow-x-auto">
       <table className="w-full text-xs">
         <thead>
           <tr className="border-b border-gray-200">
@@ -61,7 +59,7 @@ export function PanelEstadisticas({
                     key={col}
                     className="text-right px-2 py-1 font-mono text-gray-800"
                   >
-                    {val === null ? "—" : val.toFixed(2)}
+                    {val === null ? "—" : val.toFixed(1)}
                   </td>
                 );
               })}

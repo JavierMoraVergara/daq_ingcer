@@ -1,4 +1,5 @@
 use crate::types::{Esquema, LecturaInstante};
+use chrono::Local;
 use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
 use std::io::{self, BufWriter, Write};
@@ -39,13 +40,13 @@ impl CsvWriter {
         // id
         campos.push(lectura.id.to_string());
 
-        // timestamp ISO 8601
-        campos.push(lectura.timestamp.to_rfc3339());
+        // timestamp local time
+        campos.push(lectura.timestamp.with_timezone(&Local).format("%Y-%m-%d %H:%M:%S").to_string());
 
         // Values: 4 decimals or empty for NULL
         for canal in &lectura.valores {
             match canal.valor {
-                Some(v) => campos.push(format!("{:.4}", v)),
+                Some(v) => campos.push(format!("{:.1}", v)),
                 None => campos.push(String::new()),
             }
         }

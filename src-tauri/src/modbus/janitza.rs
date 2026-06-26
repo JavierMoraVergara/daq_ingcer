@@ -96,6 +96,7 @@ pub fn registros_a_float(high: u16, low: u16) -> f32 {
 /// Returns Vec<Option<f64>> where None = NULL (instrument did not respond).
 pub async fn leer_janitza(
     client: &mut ModbusTcpClient,
+    slave_id: u8,
     variables: &[JanitzaVar],
     reintentos: u8,
     timeout_ms: u64,
@@ -107,7 +108,7 @@ pub async fn leer_janitza(
         let mut valor: Option<f64> = None;
 
         for _intento in 0..=reintentos {
-            match client.leer_holding_registers(addr, 2, timeout_ms).await {
+            match client.leer_holding_registers_slave(slave_id, addr, 2, timeout_ms).await {
                 Ok(regs) if regs.len() == 2 => {
                     let float_val = registros_a_float(regs[0], regs[1]);
                     valor = Some(float_val as f64);

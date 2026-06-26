@@ -28,9 +28,8 @@ const TABS = [
   { key: "V", label: "Voltaje" },
   { key: "C", label: "Corriente" },
   { key: "P", label: "Potencia" },
-  { key: "S", label: "Aparente" },
-  { key: "Q", label: "Reactiva" },
-  { key: "PF", label: "FP" },
+  { key: "E", label: "Energía" },
+  { key: "FP", label: "FP" },
   { key: "F", label: "Freq" },
 ];
 
@@ -53,14 +52,17 @@ export function GraficoElectrico({
 
   const columnasActivas = useMemo(() => {
     return columnas.filter((col) => {
-      const variable = col.split("_").pop()?.toUpperCase() ?? "";
+      // Column format: JTZA{n}_{variable} or JTZA{n}_{variable}_{alias}
+      const parts = col.split("_");
+      // parts[0] = "JTZA1", parts[1] = variable, parts[2+] = alias
+      const variable = parts[1]?.toUpperCase() ?? "";
+
       if (tabActivo === "V") return variable.startsWith("V");
       if (tabActivo === "C") return variable.startsWith("C");
       if (tabActivo === "P")
         return variable.startsWith("P") && !variable.startsWith("PF");
-      if (tabActivo === "S") return variable.startsWith("S");
-      if (tabActivo === "Q") return variable.startsWith("Q");
-      if (tabActivo === "PF") return variable.startsWith("PF");
+      if (tabActivo === "E") return variable.startsWith("E");
+      if (tabActivo === "FP") return variable.startsWith("FP");
       if (tabActivo === "F") return variable === "F";
       return false;
     });
@@ -149,8 +151,18 @@ export function GraficoElectrico({
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={data}>
             <XAxis dataKey="time" tick={{ fontSize: 10 }} />
-            <YAxis tick={{ fontSize: 10 }} width={60} />
-            <Tooltip />
+            <YAxis
+              tick={{ fontSize: 10 }}
+              width={60}
+              tickFormatter={(v: number) =>
+                typeof v === "number" ? v.toFixed(1) : v
+              }
+            />
+            <Tooltip
+              formatter={(value: number) =>
+                value != null ? value.toFixed(1) : value
+              }
+            />
             <Legend wrapperStyle={{ fontSize: 11 }} />
             {columnasActivas.map((col, i) => (
               <Line

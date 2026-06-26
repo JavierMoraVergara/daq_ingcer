@@ -2,9 +2,10 @@ use crate::modbus::adam::leer_adam;
 use crate::modbus::client::ModbusTcpClient;
 use crate::modbus::janitza::{leer_janitza, JanitzaVar};
 use crate::persistence::csv_writer::CsvWriter;
-use crate::polling::scheduler::{calcular_deadline, sleep_hasta_deadline};
-use crate::types::{Esquema, Instrumento, LecturaInstante, ValorCanal};
+use crate::polling::scheduler::calcular_deadline;
+use crate::types::{Esquema, Instrumento, LecturaInstante, TipoTermocupla, ValorCanal};
 use chrono::Utc;
+use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -17,6 +18,15 @@ pub struct PollingConfig {
     pub aliases: std::collections::HashMap<String, String>,
 }
 
+/// Check if a column name is an energy variable (E1, E2, E3)
+fn is_energy_column(col: &str) -> bool {
+    if !col.starts_with("JTZA") { return false; }
+    let parts: Vec<&str> = col.split('_').collect();
+    if parts.len() < 2 { return false; }
+    let var = parts[1].to_uppercase();
+    var == "E1" || var == "E2" || var == "E3"
+}
+
 /// Run the polling loop. This function is designed to be spawned as a tokio::task.
 /// It will run until the `stop_flag` is set to `true`.
 pub async fn polling_loop(
@@ -27,6 +37,7 @@ pub async fn polling_loop(
 ) -> Result<(), String> {
     let t0 = Instant::now();
     let mut fila_id: u64 = 1;
+    let mut energy_taras: HashMap<String, f64> = HashMap::new();
 
     loop {
         // Check stop flag at the start of each cycle
@@ -35,8 +46,24 @@ pub async fn polling_loop(
         }
 
         // Read all instruments
-        let lecturas = leer_todos_instrumentos(&config).await;
+        let mut lecturas = leer_todos_instrumentos(&config).await;
         let timestamp = Utc::now();
+
+        // Apply energy tare: capture first value as baseline, subtract from all subsequent
+        for valor in lecturas.iter_mut() {
+            if is_energy_column(&valor.columna) {
+                if let Some(v) = valor.valor {
+                    if !energy_taras.contains_key(&valor.columna) {
+                        // First non-null value: store as tara
+                        energy_taras.insert(valor.columna.clone(), v);
+                    }
+                    // Subtract tara
+                    if let Some(&tara) = energy_taras.get(&valor.columna) {
+                        valor.valor = Some(v - tara);
+                    }
+                }
+            }
+        }
 
         // Build LecturaInstante
         let lectura = LecturaInstante {
@@ -96,7 +123,11 @@ async fn leer_todos_instrumentos(config: &PollingConfig) -> Vec<ValorCanal> {
         let key = format!("canales_{}", n);
 
         let canales = match config.esquema.canales_adam.get(&key) {
-            Some(c) => c.clone(),
+            Some(c) => {
+                let mut sorted = c.clone();
+                sorted.sort();
+                sorted
+            }
             None => continue,
         };
 
@@ -133,11 +164,14 @@ async fn leer_todos_instrumentos(config: &PollingConfig) -> Vec<ValorCanal> {
         .await
         {
             Ok(mut client) => {
+                let tipo_tc = instrumento.tipo_termocupla.clone().unwrap_or(TipoTermocupla::T);
                 leer_adam(
                     &mut client,
+                    instrumento.slave_id,
                     &canales,
                     instrumento.reintentos,
                     instrumento.timeout_ms,
+                    &tipo_tc,
                 )
                 .await
             }
@@ -213,6 +247,7 @@ async fn leer_todos_instrumentos(config: &PollingConfig) -> Vec<ValorCanal> {
             Ok(mut client) => {
                 leer_janitza(
                     &mut client,
+                    instrumento.slave_id,
                     &variables,
                     instrumento.reintentos,
                     instrumento.timeout_ms,

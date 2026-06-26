@@ -11,23 +11,14 @@ export function PanelInstantaneo({
 }: PanelInstantaneoProps) {
   if (!lectura) {
     return (
-      <div className="bg-white rounded-lg shadow p-4">
-        <h3 className="text-sm font-medium text-gray-600 mb-2">
-          Lectura Instantánea
-        </h3>
+      <div>
         <p className="text-xs text-gray-400">Sin datos</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow p-4">
-      <h3 className="text-sm font-medium text-gray-600 mb-2">
-        Lectura Instantánea
-        <span className="ml-2 text-xs text-gray-400">
-          {new Date(lectura.timestamp).toLocaleTimeString()}
-        </span>
-      </h3>
+    <div>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
         {lectura.valores.map((v) => {
           const nombre = aliases[v.columna] || v.columna;
@@ -45,7 +36,7 @@ export function PanelInstantaneo({
               <div
                 className={`font-mono font-medium ${isNull ? "text-red-600" : "text-gray-900"}`}
               >
-                {isNull ? "NULL" : `${v.valor!.toFixed(2)} ${v.unidad}`}
+                {isNull ? "NULL" : `${v.valor!.toFixed(1)} ${v.unidad}`}
               </div>
             </div>
           );

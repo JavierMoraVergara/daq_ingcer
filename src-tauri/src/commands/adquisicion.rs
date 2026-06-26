@@ -2,7 +2,7 @@ use crate::commands::instrumentos::AppState;
 use crate::persistence::csv_writer::{generar_cabeceras, CsvWriter};
 use crate::polling::polling_loop::{polling_loop, PollingConfig};
 use crate::types::EstadoEnsayo;
-use std::sync::atomic::Ordering;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use tauri::{AppHandle, State};
 
@@ -12,12 +12,12 @@ pub async fn iniciar_adquisicion(
     state: State<'_, AppState>,
     ensayo_id: u32,
 ) -> Result<(), String> {
-    // Check if there's already an active polling
-    let active = state.polling_active_ensayo_id.lock().await;
-    if active.is_some() {
-        return Err("Ya hay un ensayo en ejecución".to_string());
+    // Check if this specific essay is already running
+    let handles = state.polling_handles.lock().await;
+    if handles.contains_key(&ensayo_id) {
+        return Err("Este ensayo ya está en ejecución".to_string());
     }
-    drop(active);
+    drop(handles);
 
     // Read essay and validate state
     let mut ensayos = state.json_store.leer_registro_ensayos().await?;
@@ -46,8 +46,8 @@ pub async fn iniciar_adquisicion(
     let csv_writer = CsvWriter::nueva(&ruta_csv, &cabeceras)
         .map_err(|e| format!("Error abriendo CSV: {}", e))?;
 
-    // Reset stop flag
-    state.polling_stop_flag.store(false, Ordering::Relaxed);
+    // Create a dedicated stop flag for this essay
+    let stop_flag = Arc::new(AtomicBool::new(false));
 
     // Build polling config
     let config = PollingConfig {
@@ -58,27 +58,24 @@ pub async fn iniciar_adquisicion(
     };
 
     // Update estado to ejecutando
-    let ensayo_mut = ensayos
-        .iter_mut()
-        .find(|e| e.id == ensayo_id)
-        .unwrap();
+    let ensayo_mut = ensayos.iter_mut().find(|e| e.id == ensayo_id).unwrap();
     ensayo_mut.estado = EstadoEnsayo::Ejecutando;
     state.json_store.escribir_registro_ensayos(&ensayos).await?;
 
-    // Store active essay ID
-    let mut active = state.polling_active_ensayo_id.lock().await;
-    *active = Some(ensayo_id);
-    drop(active);
+    // Store the stop flag in handles map
+    let mut handles = state.polling_handles.lock().await;
+    handles.insert(ensayo_id, Arc::clone(&stop_flag));
+    drop(handles);
 
     // Spawn the polling loop as a background task
-    let stop_flag = Arc::clone(&state.polling_stop_flag);
-    let active_id = Arc::clone(&state.polling_active_ensayo_id);
+    let polling_handles = Arc::clone(&state.polling_handles);
+    let flag = Arc::clone(&stop_flag);
 
     tokio::spawn(async move {
-        let _ = polling_loop(config, app, csv_writer, stop_flag).await;
-        // Clear active essay on completion
-        let mut active = active_id.lock().await;
-        *active = None;
+        let _ = polling_loop(config, app, csv_writer, flag).await;
+        // Remove from handles on completion
+        let mut handles = polling_handles.lock().await;
+        handles.remove(&ensayo_id);
     });
 
     Ok(())
@@ -89,16 +86,24 @@ pub async fn detener_adquisicion(
     state: State<'_, AppState>,
     ensayo_id: u32,
 ) -> Result<(), String> {
-    // Set stop flag
-    state.polling_stop_flag.store(true, Ordering::Relaxed);
+    // Find and set the stop flag for this specific essay
+    let handles = state.polling_handles.lock().await;
+    let stop_flag = handles
+        .get(&ensayo_id)
+        .cloned()
+        .ok_or_else(|| format!("Ensayo {} no está en ejecución", ensayo_id))?;
+    drop(handles);
 
-    // Wait a bit for the loop to finish its current cycle
+    // Signal stop
+    stop_flag.store(true, Ordering::Relaxed);
+
+    // Wait for the loop to finish its current cycle
     tokio::time::sleep(std::time::Duration::from_millis(600)).await;
 
-    // Clear active essay
-    let mut active = state.polling_active_ensayo_id.lock().await;
-    *active = None;
-    drop(active);
+    // Remove from handles
+    let mut handles = state.polling_handles.lock().await;
+    handles.remove(&ensayo_id);
+    drop(handles);
 
     // Update essay state to finalizado
     let mut ensayos = state.json_store.leer_registro_ensayos().await?;
@@ -109,7 +114,7 @@ pub async fn detener_adquisicion(
 
     if ensayo.estado == EstadoEnsayo::Ejecutando {
         ensayo.estado = EstadoEnsayo::Finalizado;
-        ensayo.fecha_hora_fin = Some(chrono::Utc::now().format("%d%m%Y_%H%M%S").to_string());
+        ensayo.fecha_hora_fin = Some(chrono::Utc::now().to_rfc3339());
     }
 
     state.json_store.escribir_registro_ensayos(&ensayos).await?;

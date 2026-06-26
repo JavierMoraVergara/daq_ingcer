@@ -12,7 +12,7 @@ pub async fn verificar_ensayos_colgados(json_store: &JsonStore) -> Result<(), St
     for ensayo in registro.iter_mut() {
         if ensayo.estado == EstadoEnsayo::Ejecutando {
             ensayo.estado = EstadoEnsayo::Error;
-            ensayo.fecha_hora_fin = Some(Utc::now().format("%d%m%Y_%H%M%S").to_string());
+            ensayo.fecha_hora_fin = Some(Utc::now().to_rfc3339());
             modificado = true;
         }
     }

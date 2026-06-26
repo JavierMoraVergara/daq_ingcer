@@ -4,6 +4,7 @@ import { useEnsayoStore } from "../store/useEnsayoStore";
 import { useUiStore } from "../store/useUiStore";
 import { EsquemaCard } from "../components/esquemas/EsquemaCard";
 import { CrearEsquemaModal } from "../components/esquemas/CrearEsquemaModal";
+import { EditarEsquemaModal } from "../components/esquemas/EditarEsquemaModal";
 import { CrearEnsayoModal } from "../components/ensayo/CrearEnsayoModal";
 import { ConfirmModal } from "../components/shared/ConfirmModal";
 import type { Esquema } from "../types";
@@ -21,12 +22,20 @@ export function EsquemasView() {
   );
   const [esquemaParaDeshabilitar, setEsquemaParaDeshabilitar] =
     useState<Esquema | null>(null);
+  const [esquemaParaEditar, setEsquemaParaEditar] = useState<Esquema | null>(
+    null,
+  );
 
   const esquemasFiltrados = esquemas.filter((e) => e.vigente);
 
   const handleCrearEnsayo = (esquema: Esquema) => {
     setEsquemaParaEnsayo(esquema);
     abrirModal("crearEnsayo");
+  };
+
+  const handleEditar = (esquema: Esquema) => {
+    setEsquemaParaEditar(esquema);
+    abrirModal("editarEsquema");
   };
 
   const handleDeshabilitar = (esquema: Esquema) => {
@@ -73,9 +82,7 @@ export function EsquemasView() {
               key={esquema.id}
               esquema={esquema}
               onCrearEnsayo={handleCrearEnsayo}
-              onEditar={() => {
-                /* TODO: editar esquema */
-              }}
+              onEditar={() => handleEditar(esquema)}
               onDeshabilitar={handleDeshabilitar}
             />
           ))}
@@ -83,6 +90,15 @@ export function EsquemasView() {
       )}
 
       {modalAbierto === "crearEsquema" && <CrearEsquemaModal />}
+      {modalAbierto === "editarEsquema" && esquemaParaEditar && (
+        <EditarEsquemaModal
+          esquema={esquemaParaEditar}
+          onClose={() => {
+            setEsquemaParaEditar(null);
+            cerrarModal();
+          }}
+        />
+      )}
       {modalAbierto === "crearEnsayo" && esquemaParaEnsayo && (
         <CrearEnsayoModal esquema={esquemaParaEnsayo} />
       )}

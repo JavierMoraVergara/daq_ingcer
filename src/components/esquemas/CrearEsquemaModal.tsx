@@ -5,6 +5,7 @@ import {
 } from "./SelectorInstrumentos";
 import { useEsquemasStore } from "../../store/useEsquemasStore";
 import { useUiStore } from "../../store/useUiStore";
+import { tauriCmd } from "../../lib/tauriCommands";
 import type { CanalesADAM, CanalesJanitza } from "../../types";
 
 type Step = 1 | 2 | 3;
@@ -27,6 +28,37 @@ export function CrearEsquemaModal() {
       const adams = instrumentos.filter((i) => i.tipo === "ADAM4118");
       const janitzas = instrumentos.filter((i) => i.tipo === "JANITZA_UMG509");
 
+      // First, create each instrument in instrumentos.json and get real IDs
+      const adamIds: number[] = [];
+      for (const a of adams) {
+        const inst = await tauriCmd.crearInstrumento({
+          tipo: a.tipo,
+          nombre: a.nombre || `ADAM_${adamIds.length + 1}`,
+          direccion_ip: a.direccion_ip,
+          puerto: a.puerto,
+          slave_id: a.slave_id,
+          timeout_ms: 2000,
+          reintentos: 3,
+          tipo_termocupla: a.tipo_termocupla,
+        });
+        adamIds.push(inst.id);
+      }
+
+      const janitzaIds: number[] = [];
+      for (const j of janitzas) {
+        const inst = await tauriCmd.crearInstrumento({
+          tipo: j.tipo,
+          nombre: j.nombre || `JTZA_${janitzaIds.length + 1}`,
+          direccion_ip: j.direccion_ip,
+          puerto: j.puerto,
+          slave_id: j.slave_id,
+          timeout_ms: 2000,
+          reintentos: 3,
+          tipo_termocupla: null,
+        });
+        janitzaIds.push(inst.id);
+      }
+
       const canales_adam: CanalesADAM = {};
       adams.forEach((a, idx) => {
         canales_adam[`canales_${idx + 1}`] = a.canales as number[];
@@ -40,9 +72,9 @@ export function CrearEsquemaModal() {
       await crearEsquema({
         nombre,
         descripcion,
-        instrumentos_adam: adams.map((_, idx) => idx + 1),
+        instrumentos_adam: adamIds,
         canales_adam,
-        instrumentos_janitza: janitzas.map((_, idx) => idx + 1),
+        instrumentos_janitza: janitzaIds,
         canales_janitzas,
       });
 
@@ -56,8 +88,17 @@ export function CrearEsquemaModal() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-lg shadow-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
-        <h2 className="text-xl font-semibold mb-4">Nuevo Esquema</h2>
+      <div className="bg-white rounded-lg shadow-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 relative">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold">Nuevo Esquema</h2>
+          <button
+            type="button"
+            onClick={cerrarModal}
+            className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+          >
+            ×
+          </button>
+        </div>
 
         {/* Step indicator */}
         <div className="flex gap-2 mb-6">
@@ -96,7 +137,14 @@ export function CrearEsquemaModal() {
                 placeholder="Descripción opcional"
               />
             </div>
-            <div className="flex justify-end">
+            <div className="flex justify-between">
+              <button
+                type="button"
+                onClick={cerrarModal}
+                className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
+              >
+                Cancelar
+              </button>
               <button
                 type="button"
                 onClick={() => setStep(2)}
@@ -177,14 +225,6 @@ export function CrearEsquemaModal() {
             </div>
           </div>
         )}
-
-        <button
-          type="button"
-          onClick={cerrarModal}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-xl"
-        >
-          ×
-        </button>
       </div>
     </div>
   );

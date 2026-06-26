@@ -1,5 +1,7 @@
 export type TipoInstrumento = "ADAM4118" | "JANITZA_UMG509";
 
+export type TipoTermocupla = "J" | "K" | "T" | "E" | "R" | "S" | "B" | "N";
+
 export interface Instrumento {
   id: number;
   tipo: TipoInstrumento;
@@ -9,6 +11,7 @@ export interface Instrumento {
   slave_id: number;
   timeout_ms: number;
   reintentos: number;
+  tipo_termocupla: TipoTermocupla | null;
 }
 
 export interface CrearInstrumentoPayload {
@@ -19,4 +22,5 @@ export interface CrearInstrumentoPayload {
   slave_id: number;
   timeout_ms: number;
   reintentos: number;
+  tipo_termocupla: TipoTermocupla | null;
 }

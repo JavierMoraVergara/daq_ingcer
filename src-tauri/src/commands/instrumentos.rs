@@ -1,14 +1,16 @@
 use crate::modbus::client::ModbusTcpClient;
 use crate::persistence::json_store::JsonStore;
 use crate::types::{CrearInstrumentoPayload, Instrumento};
+use std::collections::HashMap;
+use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use tauri::State;
 use tokio::sync::Mutex;
 
 pub struct AppState {
     pub json_store: Arc<JsonStore>,
-    pub polling_stop_flag: Arc<std::sync::atomic::AtomicBool>,
-    pub polling_active_ensayo_id: Arc<Mutex<Option<u32>>>,
+    /// Map of ensayo_id → stop_flag for each running polling loop
+    pub polling_handles: Arc<Mutex<HashMap<u32, Arc<AtomicBool>>>>,
 }
 
 #[tauri::command]
@@ -34,6 +36,7 @@ pub async fn crear_instrumento(
         slave_id: payload.slave_id,
         timeout_ms: payload.timeout_ms,
         reintentos: payload.reintentos,
+        tipo_termocupla: payload.tipo_termocupla,
     };
 
     instrumentos.push(instrumento.clone());
@@ -62,6 +65,7 @@ pub async fn actualizar_instrumento(
     instrumento.slave_id = payload.slave_id;
     instrumento.timeout_ms = payload.timeout_ms;
     instrumento.reintentos = payload.reintentos;
+    instrumento.tipo_termocupla = payload.tipo_termocupla;
 
     let updated = instrumento.clone();
     state.json_store.escribir_instrumentos(&instrumentos).await?;

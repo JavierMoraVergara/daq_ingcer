@@ -140,8 +140,19 @@ export function GraficoTemperatura({
       <ResponsiveContainer width="100%" height={300}>
         <LineChart data={data}>
           <XAxis dataKey="time" tick={{ fontSize: 10 }} />
-          <YAxis domain={domain} tick={{ fontSize: 10 }} width={50} />
-          <Tooltip />
+          <YAxis
+            domain={domain}
+            tick={{ fontSize: 10 }}
+            width={50}
+            tickFormatter={(v: number) =>
+              typeof v === "number" ? v.toFixed(1) : v
+            }
+          />
+          <Tooltip
+            formatter={(value: number) =>
+              value != null ? value.toFixed(1) : value
+            }
+          />
           <Legend wrapperStyle={{ fontSize: 11 }} />
           {columnas.map((col, i) => (
             <Line

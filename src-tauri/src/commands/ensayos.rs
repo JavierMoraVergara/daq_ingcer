@@ -31,7 +31,7 @@ pub async fn crear_ensayo(
     let nuevo_id = ensayos.iter().map(|e| e.id).max().unwrap_or(0) + 1;
 
     let ahora = Utc::now();
-    let fecha_str = ahora.format("%d%m%Y_%H%M%S").to_string();
+    let fecha_str = ahora.to_rfc3339();
     let archivo_csv = format!("ENS_{}_{}.csv", ahora.format("%Y%m%d_%H%M%S"), payload.nombre);
 
     // Generate CSV headers
@@ -78,7 +78,7 @@ pub async fn finalizar_ensayo(
     }
 
     ensayo.estado = EstadoEnsayo::Finalizado;
-    ensayo.fecha_hora_fin = Some(Utc::now().format("%d%m%Y_%H%M%S").to_string());
+    ensayo.fecha_hora_fin = Some(Utc::now().to_rfc3339());
 
     let updated = ensayo.clone();
     state.json_store.escribir_registro_ensayos(&ensayos).await?;
@@ -172,6 +172,35 @@ pub async fn exportar_csv(
 
     std::fs::copy(&ruta_origen, &destino)
         .map_err(|e| format!("Error copiando CSV a destino: {}", e))?;
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn eliminar_ensayo(
+    state: State<'_, AppState>,
+    id: u32,
+) -> Result<(), String> {
+    let mut ensayos = state.json_store.leer_registro_ensayos().await?;
+
+    let ensayo = ensayos
+        .iter()
+        .find(|e| e.id == id)
+        .ok_or_else(|| format!("Ensayo con id {} no encontrado", id))?;
+
+    if ensayo.estado == EstadoEnsayo::Ejecutando {
+        return Err("No se puede eliminar un ensayo en ejecución".to_string());
+    }
+
+    // Delete CSV file if it exists
+    let ruta_csv = state.json_store.ruta_ensayo_csv(&ensayo.archivo_csv);
+    if ruta_csv.exists() {
+        let _ = std::fs::remove_file(&ruta_csv);
+    }
+
+    // Remove from registry
+    ensayos.retain(|e| e.id != id);
+    state.json_store.escribir_registro_ensayos(&ensayos).await?;
 
     Ok(())
 }

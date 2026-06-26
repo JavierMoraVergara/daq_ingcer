@@ -37,6 +37,7 @@ export const tauriCmd = {
   listarEnsayos: () => invoke<RegistroEnsayo[]>("listar_ensayos"),
   crearEnsayo: (payload: CrearEnsayoPayload) =>
     invoke<RegistroEnsayo>("crear_ensayo", { payload }),
+  eliminarEnsayo: (id: number) => invoke<void>("eliminar_ensayo", { id }),
   finalizarEnsayo: (id: number) =>
     invoke<RegistroEnsayo>("finalizar_ensayo", { id }),
   cargarDatosEnsayo: (id: number) =>

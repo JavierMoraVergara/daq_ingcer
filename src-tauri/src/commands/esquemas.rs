@@ -22,7 +22,7 @@ pub async fn crear_esquema(
         nombre: payload.nombre,
         version: 1.0,
         vigente: true,
-        fecha_hora_crea: Utc::now().format("%d%m%Y_%H%M%S").to_string(),
+        fecha_hora_crea: Utc::now().to_rfc3339(),
         usuario_crea: String::new(),
         descripcion: payload.descripcion,
         cant_adam: payload.instrumentos_adam.len(),

@@ -19,7 +19,9 @@ export function CrearEnsayoModal({ esquema }: CrearEnsayoModalProps) {
   const [error, setError] = useState<string | null>(null);
 
   const cerrarModal = useUiStore((s) => s.cerrarModal);
+  const setVista = useUiStore((s) => s.setVista);
   const cargarEnsayos = useEnsayoStore((s) => s.cargarEnsayos);
+  const setEnsayoActivo = useEnsayoStore((s) => s.setEnsayoActivo);
 
   const columnas = useMemo(() => {
     const cols: string[] = [];
@@ -52,7 +54,7 @@ export function CrearEnsayoModal({ esquema }: CrearEnsayoModalProps) {
     setSaving(true);
     setError(null);
     try {
-      await tauriCmd.crearEnsayo({
+      const ensayo = await tauriCmd.crearEnsayo({
         nombre,
         descripcion,
         esquema_id: esquema.id,
@@ -60,7 +62,9 @@ export function CrearEnsayoModal({ esquema }: CrearEnsayoModalProps) {
         aliases,
       });
       await cargarEnsayos();
+      setEnsayoActivo(ensayo);
       cerrarModal();
+      setVista("revisar");
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {

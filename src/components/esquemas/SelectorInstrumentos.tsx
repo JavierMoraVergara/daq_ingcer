@@ -1,29 +1,8 @@
 import { useState } from "react";
-import type { TipoInstrumento } from "../../types";
+import type { TipoInstrumento, TipoTermocupla } from "../../types";
 import { tauriCmd } from "../../lib/tauriCommands";
 
 const ADAM_CANALES = [1, 2, 3, 4, 5, 6, 7, 8];
-const JANITZA_VARIABLES = [
-  "v1",
-  "v2",
-  "v3",
-  "c1",
-  "c2",
-  "c3",
-  "p1",
-  "p2",
-  "p3",
-  "s1",
-  "s2",
-  "s3",
-  "q1",
-  "q2",
-  "q3",
-  "f",
-  "pf1",
-  "pf2",
-  "pf3",
-];
 
 export interface InstrumentoConfig {
   tipo: TipoInstrumento;
@@ -32,6 +11,7 @@ export interface InstrumentoConfig {
   puerto: number;
   slave_id: number;
   canales: (number | string)[];
+  tipo_termocupla: TipoTermocupla | null;
 }
 
 interface SelectorInstrumentosProps {
@@ -55,6 +35,7 @@ export function SelectorInstrumentos({
       puerto: 502,
       slave_id: 1,
       canales: [],
+      tipo_termocupla: tipo === "ADAM4118" ? "T" : null,
     };
     onChange([...instrumentos, nuevo]);
   };
@@ -168,24 +149,171 @@ export function SelectorInstrumentos({
           </div>
 
           <div>
-            <p className="text-xs font-medium text-gray-600 mb-1">Canales:</p>
-            <div className="flex flex-wrap gap-1">
-              {(inst.tipo === "ADAM4118"
-                ? ADAM_CANALES
-                : JANITZA_VARIABLES
-              ).map((canal) => (
-                <label key={canal} className="flex items-center gap-1 text-xs">
-                  <input
-                    type="checkbox"
-                    checked={inst.canales.includes(canal)}
-                    onChange={() => toggleCanal(idx, canal)}
-                    className="rounded"
-                  />
-                  {canal}
-                </label>
-              ))}
-            </div>
+            <p className="text-xs font-medium text-gray-600 mb-2">Canales:</p>
+            {inst.tipo === "ADAM4118" ? (
+              <div className="grid grid-cols-4 gap-2">
+                {ADAM_CANALES.map((canal) => (
+                  <label
+                    key={canal}
+                    className="flex items-center gap-2 text-sm px-2 py-1.5 border border-gray-200 rounded hover:bg-gray-50 cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={inst.canales.includes(canal)}
+                      onChange={() => toggleCanal(idx, canal)}
+                      className="rounded"
+                    />
+                    Canal {canal}
+                  </label>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">Voltaje</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {["v1", "v2", "v3"].map((v) => (
+                      <label
+                        key={v}
+                        className="flex items-center gap-2 text-sm px-2 py-1.5 border border-gray-200 rounded hover:bg-gray-50 cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={inst.canales.includes(v)}
+                          onChange={() => toggleCanal(idx, v)}
+                          className="rounded"
+                        />
+                        {v.toUpperCase()}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">Corriente</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {["c1", "c2", "c3"].map((v) => (
+                      <label
+                        key={v}
+                        className="flex items-center gap-2 text-sm px-2 py-1.5 border border-gray-200 rounded hover:bg-gray-50 cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={inst.canales.includes(v)}
+                          onChange={() => toggleCanal(idx, v)}
+                          className="rounded"
+                        />
+                        {v.toUpperCase()}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">Potencia</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {["p1", "p2", "p3"].map((v) => (
+                      <label
+                        key={v}
+                        className="flex items-center gap-2 text-sm px-2 py-1.5 border border-gray-200 rounded hover:bg-gray-50 cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={inst.canales.includes(v)}
+                          onChange={() => toggleCanal(idx, v)}
+                          className="rounded"
+                        />
+                        {v.toUpperCase()}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">Energía</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {["e1", "e2", "e3"].map((v) => (
+                      <label
+                        key={v}
+                        className="flex items-center gap-2 text-sm px-2 py-1.5 border border-gray-200 rounded hover:bg-gray-50 cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={inst.canales.includes(v)}
+                          onChange={() => toggleCanal(idx, v)}
+                          className="rounded"
+                        />
+                        {v.toUpperCase()}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">
+                    Factor de Potencia
+                  </p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {["fp1", "fp2", "fp3"].map((v) => (
+                      <label
+                        key={v}
+                        className="flex items-center gap-2 text-sm px-2 py-1.5 border border-gray-200 rounded hover:bg-gray-50 cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={inst.canales.includes(v)}
+                          onChange={() => toggleCanal(idx, v)}
+                          className="rounded"
+                        />
+                        {v.toUpperCase()}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">Otros</p>
+                  <div className="grid grid-cols-4 gap-2">
+                    {["f", "thd1", "thd2", "thd3"].map((v) => (
+                      <label
+                        key={v}
+                        className="flex items-center gap-2 text-sm px-2 py-1.5 border border-gray-200 rounded hover:bg-gray-50 cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={inst.canales.includes(v)}
+                          onChange={() => toggleCanal(idx, v)}
+                          className="rounded"
+                        />
+                        {v.toUpperCase()}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
+
+          {inst.tipo === "ADAM4118" && (
+            <div>
+              <p className="text-xs font-medium text-gray-600 mb-1">
+                Tipo Termocupla:
+              </p>
+              <select
+                value={inst.tipo_termocupla || "T"}
+                onChange={(e) =>
+                  updateInstrumento(idx, {
+                    tipo_termocupla: e.target.value as TipoTermocupla,
+                  })
+                }
+                className="px-2 py-1 border border-gray-300 rounded text-sm"
+              >
+                <option value="J">Tipo J (0~760°C)</option>
+                <option value="K">Tipo K (0~1370°C)</option>
+                <option value="T">Tipo T (-100~400°C)</option>
+                <option value="E">Tipo E (0~1000°C)</option>
+                <option value="R">Tipo R (500~1750°C)</option>
+                <option value="S">Tipo S (500~1750°C)</option>
+                <option value="B">Tipo B (500~1800°C)</option>
+                <option value="N">Tipo N (-200~1300°C)</option>
+              </select>
+            </div>
+          )}
 
           <div className="flex items-center gap-2">
             <button

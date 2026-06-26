@@ -9,13 +9,14 @@ mod types;
 use commands::instrumentos::AppState;
 use persistence::json_store::JsonStore;
 use persistence::recovery::verificar_ensayos_colgados;
-use std::sync::atomic::AtomicBool;
+use std::collections::HashMap;
 use std::sync::Arc;
 use tauri::Manager;
 use tokio::sync::Mutex;
 
 fn main() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             // Resolve data directory (AppData/Roaming/<app>/datos on Windows)
             let datos_dir = app
@@ -40,8 +41,7 @@ fn main() {
 
             let state = AppState {
                 json_store,
-                polling_stop_flag: Arc::new(AtomicBool::new(false)),
-                polling_active_ensayo_id: Arc::new(Mutex::new(None)),
+                polling_handles: Arc::new(Mutex::new(HashMap::new())),
             };
 
             app.manage(state);
@@ -61,6 +61,7 @@ fn main() {
             commands::ensayos::finalizar_ensayo,
             commands::ensayos::cargar_datos_ensayo,
             commands::ensayos::exportar_csv,
+            commands::ensayos::eliminar_ensayo,
             commands::adquisicion::iniciar_adquisicion,
             commands::adquisicion::detener_adquisicion,
         ])
