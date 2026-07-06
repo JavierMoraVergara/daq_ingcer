@@ -15,7 +15,7 @@ pub async fn crear_esquema(
 ) -> Result<Esquema, String> {
     let mut esquemas = state.json_store.leer_esquemas().await?;
 
-    let nuevo_id = esquemas.iter().map(|e| e.id).max().unwrap_or(0) + 1;
+    let nuevo_id = state.json_store.siguiente_id_esquema().await?;
 
     let esquema = Esquema {
         id: nuevo_id,

@@ -4,6 +4,7 @@ import { useEsquemasStore } from "./store/useEsquemasStore";
 import { useEnsayoStore } from "./store/useEnsayoStore";
 import { EsquemasView } from "./views/EsquemasView";
 import { RevisarEnsayoView } from "./views/RevisarEnsayoView";
+import ingcerLogo from "./assets/images/ingcer_logo.png";
 
 const NAV_ITEMS = [
   { key: "esquemas" as const, label: "Esquemas", icon: "📋" },
@@ -27,8 +28,17 @@ function App() {
       {/* Sidebar */}
       <aside className="w-56 bg-gray-900 text-white flex flex-col">
         <div className="p-4 border-b border-gray-700">
-          <h1 className="text-lg font-bold">DAQ Ingcer</h1>
-          <p className="text-xs text-gray-400">Sistema de adquisición</p>
+          <img
+            src={ingcerLogo}
+            alt="Ingcer"
+            className="h-9 object-contain mx-auto mb-6"
+          />
+
+          <h1 className="text-lg font-bold text-center">DAQ Ingcer</h1>
+
+          <p className="text-xs text-gray-400 text-center">
+            Sistema de adquisición y monitoreo de datos
+          </p>
         </div>
         <nav className="flex-1 py-2">
           {NAV_ITEMS.map((item) => (
@@ -53,17 +63,22 @@ function App() {
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 p-6 overflow-y-auto">
-        {vistaActual === "esquemas" && <EsquemasView />}
-        {vistaActual === "revisar" && <RevisarEnsayoView />}
-        {vistaActual === "configuracion" && (
-          <div className="space-y-4">
-            <h1 className="text-2xl font-bold text-gray-900">Configuración</h1>
-            <p className="text-sm text-gray-500">
-              Configuración general del sistema. (En desarrollo)
-            </p>
-          </div>
-        )}
+      <main className="flex-1 flex flex-col overflow-hidden">
+        {/* Content area */}
+        <div className="flex-1 p-6 overflow-y-auto">
+          {vistaActual === "esquemas" && <EsquemasView />}
+          {vistaActual === "revisar" && <RevisarEnsayoView />}
+          {vistaActual === "configuracion" && (
+            <div className="space-y-4">
+              <h1 className="text-2xl font-bold text-gray-900">
+                Configuración
+              </h1>
+              <p className="text-sm text-gray-500">
+                Configuración general del sistema. (En desarrollo)
+              </p>
+            </div>
+          )}
+        </div>
       </main>
     </div>
   );

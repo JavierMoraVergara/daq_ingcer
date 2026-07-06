@@ -22,7 +22,7 @@ impl CsvWriter {
         let mut writer = BufWriter::new(file);
 
         if es_nuevo {
-            let linea = cabeceras.join(",");
+            let linea = cabeceras.join(";");
             writeln!(writer, "{}", linea)?;
             writer.flush()?;
         }

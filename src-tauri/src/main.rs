@@ -61,6 +61,7 @@ fn main() {
             commands::ensayos::finalizar_ensayo,
             commands::ensayos::cargar_datos_ensayo,
             commands::ensayos::exportar_csv,
+            commands::ensayos::exportar_csv_rango,
             commands::ensayos::eliminar_ensayo,
             commands::adquisicion::iniciar_adquisicion,
             commands::adquisicion::detener_adquisicion,

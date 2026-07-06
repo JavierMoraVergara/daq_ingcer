@@ -44,6 +44,12 @@ export const tauriCmd = {
     invoke<DatosEnsayo>("cargar_datos_ensayo", { id }),
   exportarCsv: (id: number, destino: string) =>
     invoke<void>("exportar_csv", { id, destino }),
+  exportarCsvRango: (
+    id: number,
+    destino: string,
+    inicio: number,
+    fin: number,
+  ) => invoke<void>("exportar_csv_rango", { id, destino, inicio, fin }),
 
   // Adquisición
   iniciarAdquisicion: (ensayoId: number) =>

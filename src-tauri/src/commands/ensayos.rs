@@ -28,7 +28,7 @@ pub async fn crear_ensayo(
         .ok_or_else(|| "Esquema no encontrado o no está vigente".to_string())?;
 
     let mut ensayos = state.json_store.leer_registro_ensayos().await?;
-    let nuevo_id = ensayos.iter().map(|e| e.id).max().unwrap_or(0) + 1;
+    let nuevo_id = state.json_store.siguiente_id_ensayo().await?;
 
     let ahora = Utc::now();
     let fecha_str = ahora.to_rfc3339();
@@ -201,6 +201,72 @@ pub async fn eliminar_ensayo(
     // Remove from registry
     ensayos.retain(|e| e.id != id);
     state.json_store.escribir_registro_ensayos(&ensayos).await?;
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn exportar_csv_rango(
+    state: State<'_, AppState>,
+    id: u32,
+    destino: String,
+    inicio: usize,
+    fin: usize,
+) -> Result<(), String> {
+    let ensayos = state.json_store.leer_registro_ensayos().await?;
+    let ensayo = ensayos
+        .iter()
+        .find(|e| e.id == id)
+        .ok_or_else(|| format!("Ensayo con id {} no encontrado", id))?;
+
+    let ruta_origen = state.json_store.ruta_ensayo_csv(&ensayo.archivo_csv);
+
+    if !ruta_origen.exists() {
+        return Err(format!("Archivo CSV no encontrado: {}", ensayo.archivo_csv));
+    }
+
+    let file = std::fs::File::open(&ruta_origen)
+        .map_err(|e| format!("Error abriendo CSV: {}", e))?;
+    let reader = std::io::BufReader::new(file);
+    let mut lines = reader.lines();
+
+    // Read header
+    let header = lines
+        .next()
+        .ok_or_else(|| "CSV vacío".to_string())?
+        .map_err(|e| format!("Error leyendo cabecera: {}", e))?;
+
+    // Collect only valid data rows (same logic as cargar_datos_ensayo)
+    let mut output_lines: Vec<String> = vec![header];
+    let mut valid_row_idx: usize = 0;
+    let mut new_id: usize = 1;
+
+    for line_result in lines {
+        let line = line_result.map_err(|e| format!("Error leyendo línea: {}", e))?;
+        let campos: Vec<&str> = line.split(',').collect();
+
+        // Skip invalid rows (same filter as cargar_datos_ensayo)
+        if campos.len() < 2 {
+            continue;
+        }
+
+        // Only include rows within the requested range
+        if valid_row_idx >= inicio && valid_row_idx <= fin {
+            // Replace original id with sequential id
+            let rest = &campos[1..].join(",");
+            output_lines.push(format!("{},{}", new_id, rest));
+            new_id += 1;
+        }
+
+        valid_row_idx += 1;
+        if valid_row_idx > fin {
+            break;
+        }
+    }
+
+    let content = output_lines.join("\n");
+    std::fs::write(&destino, content)
+        .map_err(|e| format!("Error escribiendo CSV: {}", e))?;
 
     Ok(())
 }

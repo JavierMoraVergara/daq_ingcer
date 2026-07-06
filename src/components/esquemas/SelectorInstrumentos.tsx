@@ -1,6 +1,8 @@
 import { useState } from "react";
 import type { TipoInstrumento, TipoTermocupla } from "../../types";
 import { tauriCmd } from "../../lib/tauriCommands";
+import adamImg from "../../assets/images/adam.png";
+import janitzaImg from "../../assets/images/janitza.png";
 
 const ADAM_CANALES = [1, 2, 3, 4, 5, 6, 7, 8];
 
@@ -98,10 +100,17 @@ export function SelectorInstrumentos({
       {instrumentos.map((inst, idx) => (
         <div key={idx} className="border border-gray-200 rounded p-3 space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-700">
-              {inst.tipo === "ADAM4118" ? "ADAM4118" : "Janitza UMG509"} #
-              {idx + 1}
-            </span>
+            <div className="flex items-center gap-3">
+              <img
+                src={inst.tipo === "ADAM4118" ? adamImg : janitzaImg}
+                alt={inst.tipo}
+                className="h-12 w-auto object-contain rounded border border-gray-200 p-1 bg-white"
+              />
+              <span className="text-sm font-medium text-gray-700">
+                {inst.tipo === "ADAM4118" ? "ADAM4118" : "Janitza UMG509"} #
+                {idx + 1}
+              </span>
+            </div>
             <button
               type="button"
               onClick={() => removeInstrumento(idx)}

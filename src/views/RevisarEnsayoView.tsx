@@ -3,13 +3,13 @@ import { useEnsayoStore } from "../store/useEnsayoStore";
 import { useEstadisticas } from "../hooks/useEstadisticas";
 import { StatusBadge } from "../components/shared/StatusBadge";
 import { CollapsibleSection } from "../components/shared/CollapsibleSection";
+import { CountdownTimer } from "../components/shared/CountdownTimer";
 import { PanelInstantaneo } from "../components/ensayo/PanelInstantaneo";
 import { PanelEstadisticas } from "../components/ensayo/PanelEstadisticas";
 import { GraficoTemperatura } from "../components/graficos/GraficoTemperatura";
 import { GraficoElectrico } from "../components/graficos/GraficoElectrico";
 import {
   CotasControl,
-  type CotasConfig,
   type RangoCota,
 } from "../components/graficos/CotasControl";
 import { tauriCmd } from "../lib/tauriCommands";
@@ -25,14 +25,21 @@ export function RevisarEnsayoView() {
   const [exportError, setExportError] = useState<string | null>(null);
   const [loadingInicial, setLoadingInicial] = useState(false);
   const [page, setPage] = useState(0);
-  const [cotas, setCotas] = useState<CotasConfig>({
-    promedio: false,
-    mediana: false,
-    minimo: false,
-    maximo: false,
-    desviacion_std: false,
-  });
   const [rangoCota, setRangoCota] = useState<RangoCota>({ inicio: 0, fin: 0 });
+  const [showTimerModal, setShowTimerModal] = useState(false);
+
+  const handleTimerFinish = async () => {
+    setShowTimerModal(true);
+    // Request window attention (flashing in taskbar)
+    try {
+      const { getCurrentWindow } = await import("@tauri-apps/api/window");
+      const win = getCurrentWindow();
+      await win.requestUserAttention(2); // 2 = Informational (flashes taskbar)
+      await win.setFocus();
+    } catch {
+      // Fallback: at least the modal will show
+    }
+  };
 
   // Separate ensayos into executing and non-executing
   const ensayosEjecutando = ensayos.filter((e) => e.estado === "ejecutando");
@@ -142,7 +149,7 @@ export function RevisarEnsayoView() {
     }
   };
 
-  // Export only data within the cota range
+  // Export only data within the selected range
   const handleExportarRango = async () => {
     if (!seleccionado || !datos) return;
     try {
@@ -152,8 +159,12 @@ export function RevisarEnsayoView() {
       });
       if (!destino) return;
 
-      // Export the full CSV for now
-      await tauriCmd.exportarCsv(seleccionado, destino);
+      await tauriCmd.exportarCsvRango(
+        seleccionado,
+        destino,
+        rangoCota.inicio,
+        rangoCota.fin,
+      );
     } catch (e) {
       setExportError(e instanceof Error ? e.message : String(e));
     }
@@ -358,42 +369,49 @@ export function RevisarEnsayoView() {
         </div>
       </CollapsibleSection>
 
-      {/* 2. Running ensayos — always visible as compact cards */}
+      {/* 2. Running ensayos — always visible as compact cards + timer */}
       {ensayosEjecutando.length > 0 && (
-        <div className="space-y-2">
+        <div className="space-y-3">
           <h2 className="text-sm font-medium text-green-700">
             ● Ensayos en ejecución
           </h2>
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {ensayosEjecutando.map((ens) => (
-              <div
-                key={ens.id}
-                onClick={() => handleSeleccionar(ens.id)}
-                className={`flex items-center justify-between gap-2 p-3 bg-green-50 border border-green-200 rounded-lg cursor-pointer hover:bg-green-100 transition-colors ${seleccionado === ens.id ? "ring-2 ring-green-400" : ""}`}
-              >
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-gray-900 truncate">
-                    {ens.nombre}
-                  </p>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <StatusBadge estado={ens.estado} />
-                    <span className="text-xs text-gray-500">
-                      {new Date(ens.fecha_hora_inicio).toLocaleTimeString()}
-                    </span>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDetener(ens.id);
-                  }}
-                  className="px-2 py-1 text-xs font-medium text-orange-700 bg-orange-100 border border-orange-300 rounded hover:bg-orange-200 shrink-0"
+          <div className="grid gap-3 lg:grid-cols-2">
+            {/* Ensayo cards */}
+            <div className="space-y-2">
+              {ensayosEjecutando.map((ens) => (
+                <div
+                  key={ens.id}
+                  onClick={() => handleSeleccionar(ens.id)}
+                  className={`flex items-center justify-between gap-2 p-3 bg-green-50 border border-green-200 rounded-lg cursor-pointer hover:bg-green-100 transition-colors ${seleccionado === ens.id ? "ring-2 ring-green-400" : ""}`}
                 >
-                  Detener
-                </button>
-              </div>
-            ))}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {ens.nombre}
+                    </p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <StatusBadge estado={ens.estado} />
+                      <span className="text-xs text-gray-500">
+                        {new Date(ens.fecha_hora_inicio).toLocaleTimeString()}
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDetener(ens.id);
+                    }}
+                    className="px-3 py-1.5 text-xs font-medium text-orange-700 bg-orange-100 border border-orange-300 rounded hover:bg-orange-200 shrink-0"
+                  >
+                    Detener
+                  </button>
+                </div>
+              ))}
+            </div>
+            {/* Timer card — separate */}
+            <div>
+              <CountdownTimer onFinish={handleTimerFinish} />
+            </div>
           </div>
         </div>
       )}
@@ -452,7 +470,6 @@ export function RevisarEnsayoView() {
                     lecturas={lecturasEnRango}
                     columnas={columnasAdam}
                     estadisticas={estadisticas}
-                    cotas={cotas}
                     aliases={ensayoSeleccionado?.aliases}
                   />
                 </CollapsibleSection>
@@ -468,7 +485,6 @@ export function RevisarEnsayoView() {
                     lecturas={lecturasEnRango}
                     columnas={columnasJanitza}
                     estadisticas={estadisticas}
-                    cotas={cotas}
                     aliases={ensayoSeleccionado?.aliases}
                   />
                 </CollapsibleSection>
@@ -480,8 +496,6 @@ export function RevisarEnsayoView() {
                 defaultOpen={true}
               >
                 <CotasControl
-                  config={cotas}
-                  onChange={setCotas}
                   rango={rangoCota}
                   onRangoChange={setRangoCota}
                   totalLecturas={lecturas.length}
@@ -520,6 +534,27 @@ export function RevisarEnsayoView() {
               </div>
             </>
           )}
+        </div>
+      )}
+
+      {showTimerModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full text-center">
+            <div className="text-4xl mb-3">⏰</div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              ¡Tiempo cumplido!
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              El temporizador ha finalizado.
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowTimerModal(false)}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+            >
+              Aceptar
+            </button>
+          </div>
         </div>
       )}
     </div>

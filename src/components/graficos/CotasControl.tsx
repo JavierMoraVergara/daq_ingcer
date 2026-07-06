@@ -12,21 +12,11 @@ export interface RangoCota {
 }
 
 interface CotasControlProps {
-  config: CotasConfig;
-  onChange: (config: CotasConfig) => void;
   rango: RangoCota;
   onRangoChange: (rango: RangoCota) => void;
   totalLecturas: number;
   timestamps?: string[];
 }
-
-const COTAS: { key: keyof CotasConfig; label: string }[] = [
-  { key: "promedio", label: "Promedio" },
-  { key: "mediana", label: "Mediana" },
-  { key: "minimo", label: "Mínimo" },
-  { key: "maximo", label: "Máximo" },
-  { key: "desviacion_std", label: "Desv. Std" },
-];
 
 function formatTimestamp(ts: string | undefined): string {
   if (!ts) return "—";
@@ -41,17 +31,11 @@ function formatTimestamp(ts: string | undefined): string {
 }
 
 export function CotasControl({
-  config,
-  onChange,
   rango,
   onRangoChange,
   totalLecturas,
   timestamps,
 }: CotasControlProps) {
-  const toggle = (key: keyof CotasConfig) => {
-    onChange({ ...config, [key]: !config[key] });
-  };
-
   const max = Math.max(0, totalLecturas - 1);
 
   return (
@@ -131,24 +115,6 @@ export function CotasControl({
         ) : (
           <p className="text-xs text-gray-400 py-2">Sin datos disponibles</p>
         )}
-      </div>
-
-      {/* Stats checkboxes */}
-      <div className="flex flex-wrap gap-3">
-        {COTAS.map(({ key, label }) => (
-          <label
-            key={key}
-            className="flex items-center gap-1.5 text-xs text-gray-700"
-          >
-            <input
-              type="checkbox"
-              checked={config[key]}
-              onChange={() => toggle(key)}
-              className="rounded"
-            />
-            {label}
-          </label>
-        ))}
       </div>
     </div>
   );

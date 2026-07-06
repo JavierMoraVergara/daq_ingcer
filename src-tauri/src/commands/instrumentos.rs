@@ -25,7 +25,7 @@ pub async fn crear_instrumento(
 ) -> Result<Instrumento, String> {
     let mut instrumentos = state.json_store.leer_instrumentos().await?;
 
-    let nuevo_id = instrumentos.iter().map(|i| i.id).max().unwrap_or(0) + 1;
+    let nuevo_id = state.json_store.siguiente_id_instrumento().await?;
 
     let instrumento = Instrumento {
         id: nuevo_id,

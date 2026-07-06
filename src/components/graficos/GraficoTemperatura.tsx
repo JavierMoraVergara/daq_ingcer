@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
   LineChart,
   Line,
@@ -30,7 +30,6 @@ interface GraficoTemperaturaProps {
   estadisticas?: Map<string, Estadisticas>;
   cotas?: CotasConfig;
   aliases?: AliasMap;
-  rangoY?: [number, number];
 }
 
 export function GraficoTemperatura({
@@ -39,10 +38,7 @@ export function GraficoTemperatura({
   estadisticas,
   cotas,
   aliases = {},
-  rangoY,
 }: GraficoTemperaturaProps) {
-  const [escalaAuto, setEscalaAuto] = useState(true);
-
   const data = useMemo(() => {
     return lecturas.map((l) => {
       const point: Record<string, string | number | null> = {
@@ -57,7 +53,6 @@ export function GraficoTemperatura({
   }, [lecturas, columnas]);
 
   const domain = useMemo((): [number, number] | ["auto", "auto"] => {
-    if (!escalaAuto && rangoY) return rangoY;
     if (data.length === 0) return ["auto", "auto"];
 
     let min = Infinity;
@@ -74,7 +69,7 @@ export function GraficoTemperatura({
     if (!isFinite(min)) return ["auto", "auto"];
     const margin = (max - min) * 0.1 || 1;
     return [min - margin, max + margin];
-  }, [data, columnas, escalaAuto, rangoY]);
+  }, [data, columnas]);
 
   const referenceLines = useMemo(() => {
     if (!cotas || !estadisticas) return [];
@@ -124,19 +119,7 @@ export function GraficoTemperatura({
   }
 
   return (
-    <div className="bg-white rounded-lg shadow p-4">
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="text-sm font-medium text-gray-700">Temperatura (°C)</h3>
-        <label className="flex items-center gap-1.5 text-xs text-gray-600">
-          <input
-            type="checkbox"
-            checked={escalaAuto}
-            onChange={(e) => setEscalaAuto(e.target.checked)}
-            className="rounded"
-          />
-          Auto-escala
-        </label>
-      </div>
+    <div>
       <ResponsiveContainer width="100%" height={300}>
         <LineChart data={data}>
           <XAxis dataKey="time" tick={{ fontSize: 10 }} />

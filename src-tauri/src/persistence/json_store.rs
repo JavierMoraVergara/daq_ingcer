@@ -1,6 +1,14 @@
 use crate::types::{Esquema, Instrumento, RegistroEnsayo};
+use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use tokio::fs;
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct Contadores {
+    pub ultimo_instrumento_id: u32,
+    pub ultimo_esquema_id: u32,
+    pub ultimo_ensayo_id: u32,
+}
 
 pub struct JsonStore {
     datos_dir: PathBuf,
@@ -29,6 +37,13 @@ impl JsonStore {
                 self.escribir_atomico(&ruta, &Vec::<serde_json::Value>::new()).await?;
             }
         }
+
+        // Initialize counters file if it doesn't exist
+        let ruta_contadores = self.datos_dir.join("contadores.json");
+        if !ruta_contadores.exists() {
+            self.escribir_atomico(&ruta_contadores, &Contadores::default()).await?;
+        }
+
         Ok(())
     }
 
@@ -114,5 +129,41 @@ impl JsonStore {
     /// Get the datos directory path
     pub fn datos_dir(&self) -> &Path {
         &self.datos_dir
+    }
+
+    // --- Contadores ---
+
+    fn ruta_contadores(&self) -> PathBuf {
+        self.datos_dir.join("contadores.json")
+    }
+
+    pub async fn leer_contadores(&self) -> Result<Contadores, String> {
+        self.leer_json(&self.ruta_contadores()).await
+    }
+
+    pub async fn escribir_contadores(&self, contadores: &Contadores) -> Result<(), String> {
+        self.escribir_atomico(&self.ruta_contadores(), contadores).await
+    }
+
+    /// Get next ID for a given entity type and persist the counter
+    pub async fn siguiente_id_instrumento(&self) -> Result<u32, String> {
+        let mut c = self.leer_contadores().await?;
+        c.ultimo_instrumento_id += 1;
+        self.escribir_contadores(&c).await?;
+        Ok(c.ultimo_instrumento_id)
+    }
+
+    pub async fn siguiente_id_esquema(&self) -> Result<u32, String> {
+        let mut c = self.leer_contadores().await?;
+        c.ultimo_esquema_id += 1;
+        self.escribir_contadores(&c).await?;
+        Ok(c.ultimo_esquema_id)
+    }
+
+    pub async fn siguiente_id_ensayo(&self) -> Result<u32, String> {
+        let mut c = self.leer_contadores().await?;
+        c.ultimo_ensayo_id += 1;
+        self.escribir_contadores(&c).await?;
+        Ok(c.ultimo_ensayo_id)
     }
 }
