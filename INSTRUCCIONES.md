@@ -15,7 +15,7 @@ Software de escritorio para adquisición de datos de instrumentos ADAM 4118 (tem
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt install -y nodejs
 
-# Rust
+# Rust (1.88+)
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 source ~/.cargo/env
 
@@ -29,21 +29,22 @@ sudo apt install -y \
   librsvg2-dev
 
 # CLI de Tauri
-cargo install tauri-cli --version "^2"
+cargo install tauri-cli --version "^2" --locked
 
-# Cross-compilación a Windows (opcional, solo para build final)
-sudo apt install -y mingw-w64
+# Cross-compilación a Windows
+sudo apt install -y mingw-w64 nsis
 rustup target add x86_64-pc-windows-gnu
 ```
 
-### Docker (alternativa con contenedores)
+### Docker (alternativa con contenedores — solo para frontend)
 
 ```bash
-# Instalar Docker
-sudo apt install -y docker.io docker-compose-v2
-sudo usermod -aG docker $USER
-# Cerrar sesión y volver a entrar para que tome efecto
+# Solo UI sin Tauri
+docker compose up
+# Abrir http://localhost:1420
 ```
+
+Nota: Tauri requiere ventana nativa, por lo que el desarrollo completo se hace local con `npm run tauri dev`.
 
 ---
 

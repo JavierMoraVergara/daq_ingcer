@@ -114,7 +114,7 @@ pub async fn cargar_datos_ensayo(
         .next()
         .ok_or_else(|| "CSV vacío".to_string())?
         .map_err(|e| format!("Error leyendo cabeceras: {}", e))?;
-    let cabeceras: Vec<String> = cabeceras_line.split(',').map(|s| s.to_string()).collect();
+    let cabeceras: Vec<String> = cabeceras_line.split(';').map(|s| s.to_string()).collect();
 
     // Read data rows
     let mut timestamps: Vec<String> = Vec::new();
@@ -122,7 +122,7 @@ pub async fn cargar_datos_ensayo(
 
     for line_result in lines {
         let line = line_result.map_err(|e| format!("Error leyendo línea: {}", e))?;
-        let campos: Vec<&str> = line.split(',').collect();
+        let campos: Vec<&str> = line.split(';').collect();
 
         if campos.len() < 2 {
             continue;
@@ -243,7 +243,7 @@ pub async fn exportar_csv_rango(
 
     for line_result in lines {
         let line = line_result.map_err(|e| format!("Error leyendo línea: {}", e))?;
-        let campos: Vec<&str> = line.split(',').collect();
+        let campos: Vec<&str> = line.split(';').collect();
 
         // Skip invalid rows (same filter as cargar_datos_ensayo)
         if campos.len() < 2 {
@@ -253,8 +253,8 @@ pub async fn exportar_csv_rango(
         // Only include rows within the requested range
         if valid_row_idx >= inicio && valid_row_idx <= fin {
             // Replace original id with sequential id
-            let rest = &campos[1..].join(",");
-            output_lines.push(format!("{},{}", new_id, rest));
+            let rest = &campos[1..].join(";");
+            output_lines.push(format!("{};{}", new_id, rest));
             new_id += 1;
         }
 

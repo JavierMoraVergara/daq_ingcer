@@ -11,11 +11,11 @@ export function parsearCsvEnsayo(texto: string): CsvParseResult {
     return { cabeceras: [], lecturas: [] };
   }
 
-  const cabeceras = lineas[0].split(",");
+  const cabeceras = lineas[0].split(";");
   const lecturas: LecturaInstante[] = [];
 
   for (let i = 1; i < lineas.length; i++) {
-    const campos = lineas[i].split(",");
+    const campos = lineas[i].split(";");
     if (campos.length < 2) continue;
 
     const id = parseInt(campos[0], 10);

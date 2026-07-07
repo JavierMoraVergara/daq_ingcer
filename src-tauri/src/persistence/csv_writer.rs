@@ -51,7 +51,7 @@ impl CsvWriter {
             }
         }
 
-        let linea = campos.join(",");
+        let linea = campos.join(";");
         writeln!(self.writer, "{}", linea)?;
         self.writer.flush()?; // Flush inmediato — clave para recuperación ante corte
 
