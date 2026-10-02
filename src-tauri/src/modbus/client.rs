@@ -69,18 +69,58 @@ impl ModbusTcpClient {
         self.leer_holding_registers(addr, count, timeout_ms).await
     }
 
-    /// Test connection by attempting to read register 0
+    /// Write a single holding register (Modbus function 06) with timeout.
+    /// Used to change the Set Value (SV) of the Metaltex MC62 controller.
+    pub async fn escribir_single_register(
+        &mut self,
+        addr: u16,
+        valor: u16,
+        timeout_ms: u64,
+    ) -> Result<(), String> {
+        timeout(
+            Duration::from_millis(timeout_ms),
+            self.ctx.write_single_register(addr, valor),
+        )
+        .await
+        .map_err(|_| format!("Timeout escribiendo registro {}", addr))?
+        .map_err(|e| format!("Error de transporte escribiendo registro {}: {}", addr, e))?
+        .map_err(|e| format!("Excepción Modbus escribiendo registro {}: {:?}", addr, e))
+    }
+
+    /// Write a single holding register with a specific slave ID.
+    pub async fn escribir_single_register_slave(
+        &mut self,
+        slave_id: u8,
+        addr: u16,
+        valor: u16,
+        timeout_ms: u64,
+    ) -> Result<(), String> {
+        self.set_slave(slave_id);
+        self.escribir_single_register(addr, valor, timeout_ms).await
+    }
+
+    /// Test connection: first checks TCP reach to gateway, then tries to read
+    /// `registro_prueba` from the slave. Returns (gateway_ok, esclavo_ok).
+    ///
+    /// The register to probe depends on the instrument: most use register 0,
+    /// but the UMG503 has no register 0 (its map starts at 3004+), so a valid
+    /// register such as 3006 (V1) must be used to get a meaningful result.
     pub async fn probar_conexion(
         ip: &str,
         puerto: u16,
         slave_id: u8,
         timeout_ms: u64,
-    ) -> bool {
+        registro_prueba: u16,
+    ) -> (bool, bool) {
         match Self::conectar(ip, puerto, slave_id, timeout_ms).await {
             Ok(mut client) => {
-                client.leer_holding_registers(0, 1, timeout_ms).await.is_ok()
+                let esclavo_ok = client
+                    .leer_holding_registers(registro_prueba, 1, timeout_ms)
+                    .await
+                    .is_ok();
+                (true, esclavo_ok)
             }
-            Err(_) => false,
+            Err(_) => (false, false),
         }
     }
 }

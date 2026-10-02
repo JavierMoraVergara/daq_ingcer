@@ -16,6 +16,12 @@ pub struct Esquema {
     pub cant_janitzas: usize,
     pub instrumentos_janitza: Vec<u32>,
     pub canales_janitzas: HashMap<String, Vec<String>>,
+    #[serde(default)]
+    pub cant_metaltex: usize,
+    #[serde(default)]
+    pub instrumentos_metaltex: Vec<u32>,
+    #[serde(default)]
+    pub canales_metaltex: HashMap<String, Vec<String>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -26,6 +32,10 @@ pub struct CrearEsquemaPayload {
     pub canales_adam: HashMap<String, Vec<u8>>,
     pub instrumentos_janitza: Vec<u32>,
     pub canales_janitzas: HashMap<String, Vec<String>>,
+    #[serde(default)]
+    pub instrumentos_metaltex: Vec<u32>,
+    #[serde(default)]
+    pub canales_metaltex: HashMap<String, Vec<String>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -36,4 +46,6 @@ pub struct ActualizarEsquemaPayload {
     pub canales_adam: Option<HashMap<String, Vec<u8>>>,
     pub instrumentos_janitza: Option<Vec<u32>>,
     pub canales_janitzas: Option<HashMap<String, Vec<String>>>,
+    pub instrumentos_metaltex: Option<Vec<u32>>,
+    pub canales_metaltex: Option<HashMap<String, Vec<String>>>,
 }

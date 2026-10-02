@@ -22,7 +22,29 @@ export const tauriCmd = {
     puerto: number,
     slaveId: number,
     timeoutMs: number,
-  ) => invoke<boolean>("probar_conexion", { ip, puerto, slaveId, timeoutMs }),
+    registroPrueba: number,
+  ) =>
+    invoke<ProbarConexionResult>("probar_conexion", {
+      ip,
+      puerto,
+      slaveId,
+      timeoutMs,
+      registroPrueba,
+    }),
+  escribirSvMetaltex: (
+    ip: string,
+    puerto: number,
+    slaveId: number,
+    timeoutMs: number,
+    valor: number,
+  ) =>
+    invoke<void>("escribir_sv_metaltex", {
+      ip,
+      puerto,
+      slaveId,
+      timeoutMs,
+      valor,
+    }),
 
   // Esquemas
   listarEsquemas: () => invoke<Esquema[]>("listar_esquemas"),
@@ -57,3 +79,8 @@ export const tauriCmd = {
   detenerAdquisicion: (ensayoId: number) =>
     invoke<void>("detener_adquisicion", { ensayoId }),
 };
+
+export interface ProbarConexionResult {
+  gateway_ok: boolean;
+  esclavo_ok: boolean;
+}

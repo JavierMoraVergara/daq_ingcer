@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { LecturaInstante, AliasMap } from "../../types";
+import { formatearValor } from "../../lib/formato";
 
 interface PanelInstantaneoProps {
   lectura: LecturaInstante | null;
@@ -73,7 +74,9 @@ export function PanelInstantaneo({
                   <div
                     className={`font-mono font-medium ${isNull ? "text-red-600" : "text-gray-900"}`}
                   >
-                    {isNull ? "NULL" : `${v.valor!.toFixed(1)} ${v.unidad}`}
+                    {isNull
+                      ? "NULL"
+                      : `${formatearValor(v.valor, v.unidad)} ${v.unidad}`}
                   </div>
                 </div>
               );

@@ -9,6 +9,7 @@ import type {
   Esquema,
   CanalesADAM,
   CanalesJanitza,
+  CanalesMetaltex,
   Instrumento,
 } from "../../types";
 
@@ -68,8 +69,31 @@ export function EditarEsquemaModal({
           const canales = esquema.canales_janitzas[key] || [];
 
           configs.push({
-            tipo: "JANITZA_UMG509",
+            tipo:
+              inst?.tipo === "JANITZA_UMG503"
+                ? "JANITZA_UMG503"
+                : "JANITZA_UMG509",
             nombre: inst?.nombre || `JTZA_${i + 1}`,
+            direccion_ip: inst?.direccion_ip || "",
+            puerto: inst?.puerto || 502,
+            slave_id: inst?.slave_id || 1,
+            canales: canales,
+            tipo_termocupla: null,
+          });
+        }
+
+        // Load Metaltex instruments
+        for (let i = 0; i < esquema.instrumentos_metaltex.length; i++) {
+          const instId = esquema.instrumentos_metaltex[i];
+          const inst = allInstrumentos.find(
+            (x: Instrumento) => x.id === instId,
+          );
+          const key = `canales_${i + 1}`;
+          const canales = esquema.canales_metaltex[key] || [];
+
+          configs.push({
+            tipo: "METALTEX_MC62",
+            nombre: inst?.nombre || `MTLX_${i + 1}`,
             direccion_ip: inst?.direccion_ip || "",
             puerto: inst?.puerto || 502,
             slave_id: inst?.slave_id || 1,
@@ -94,7 +118,9 @@ export function EditarEsquemaModal({
     setError(null);
     try {
       const adams = instrumentos.filter((i) => i.tipo === "ADAM4118");
-      const janitzas = instrumentos.filter((i) => i.tipo === "JANITZA_UMG509");
+      const janitzas = instrumentos.filter(
+        (i) => i.tipo === "JANITZA_UMG509" || i.tipo === "JANITZA_UMG503",
+      );
 
       // Create/update instruments in instrumentos.json
       const adamIds: number[] = [];
@@ -127,6 +153,22 @@ export function EditarEsquemaModal({
         janitzaIds.push(inst.id);
       }
 
+      const metaltex = instrumentos.filter((i) => i.tipo === "METALTEX_MC62");
+      const metaltexIds: number[] = [];
+      for (const m of metaltex) {
+        const inst = await tauriCmd.crearInstrumento({
+          tipo: m.tipo,
+          nombre: m.nombre || `MTLX_${metaltexIds.length + 1}`,
+          direccion_ip: m.direccion_ip,
+          puerto: m.puerto,
+          slave_id: m.slave_id,
+          timeout_ms: 2000,
+          reintentos: 3,
+          tipo_termocupla: null,
+        });
+        metaltexIds.push(inst.id);
+      }
+
       const canales_adam: CanalesADAM = {};
       adams.forEach((a, idx) => {
         canales_adam[`canales_${idx + 1}`] = a.canales as number[];
@@ -137,6 +179,11 @@ export function EditarEsquemaModal({
         canales_janitzas[`canales_${idx + 1}`] = j.canales as string[];
       });
 
+      const canales_metaltex: CanalesMetaltex = {};
+      metaltex.forEach((m, idx) => {
+        canales_metaltex[`canales_${idx + 1}`] = m.canales as string[];
+      });
+
       await tauriCmd.actualizarEsquema(esquema.id, {
         nombre: nombre.trim(),
         descripcion: descripcion.trim(),
@@ -144,6 +191,8 @@ export function EditarEsquemaModal({
         canales_adam,
         instrumentos_janitza: janitzaIds,
         canales_janitzas,
+        instrumentos_metaltex: metaltexIds,
+        canales_metaltex,
       });
 
       await cargarEsquemas();

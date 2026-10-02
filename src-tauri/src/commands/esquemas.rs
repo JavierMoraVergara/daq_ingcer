@@ -31,6 +31,9 @@ pub async fn crear_esquema(
         cant_janitzas: payload.instrumentos_janitza.len(),
         instrumentos_janitza: payload.instrumentos_janitza,
         canales_janitzas: payload.canales_janitzas,
+        cant_metaltex: payload.instrumentos_metaltex.len(),
+        instrumentos_metaltex: payload.instrumentos_metaltex,
+        canales_metaltex: payload.canales_metaltex,
     };
 
     esquemas.push(esquema.clone());
@@ -71,6 +74,13 @@ pub async fn actualizar_esquema(
     }
     if let Some(canales) = payload.canales_janitzas {
         esquema.canales_janitzas = canales;
+    }
+    if let Some(inst_mtlx) = payload.instrumentos_metaltex {
+        esquema.cant_metaltex = inst_mtlx.len();
+        esquema.instrumentos_metaltex = inst_mtlx;
+    }
+    if let Some(canales) = payload.canales_metaltex {
+        esquema.canales_metaltex = canales;
     }
 
     let updated = esquema.clone();

@@ -58,7 +58,7 @@ function App() {
           ))}
         </nav>
         <div className="p-3 border-t border-gray-700 text-xs text-gray-500">
-          v0.1.0
+          v0.1.1
         </div>
       </aside>
 

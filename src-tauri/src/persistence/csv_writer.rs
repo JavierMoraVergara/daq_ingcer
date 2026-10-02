@@ -43,10 +43,20 @@ impl CsvWriter {
         // timestamp local time
         campos.push(lectura.timestamp.with_timezone(&Local).format("%Y-%m-%d %H:%M:%S").to_string());
 
-        // Values: 4 decimals or empty for NULL
+        // Values: decimals depend on the column type.
+        // Temperature (ADAM, MTLX) → 1 decimal; electrical (JTZA) → 4 decimals
+        // (needed for milliampere-range currents on the Janitza).
         for canal in &lectura.valores {
             match canal.valor {
-                Some(v) => campos.push(format!("{:.1}", v)),
+                Some(v) => {
+                    let es_temperatura = canal.columna.starts_with("ADAM")
+                        || canal.columna.starts_with("MTLX");
+                    if es_temperatura {
+                        campos.push(format!("{:.1}", v));
+                    } else {
+                        campos.push(format!("{:.4}", v));
+                    }
+                }
                 None => campos.push(String::new()),
             }
         }
@@ -93,6 +103,22 @@ pub fn generar_cabeceras(esquema: &Esquema, aliases: &HashMap<String, String>) -
         if let Some(variables) = esquema.canales_janitzas.get(&key) {
             for var in variables {
                 let base = format!("JTZA{}_{}", n, var.to_uppercase());
+                let alias = aliases.get(&base).cloned().unwrap_or_default();
+                if alias.is_empty() {
+                    cols.push(base);
+                } else {
+                    cols.push(format!("{}_{}", base, alias));
+                }
+            }
+        }
+    }
+
+    // Metaltex columns: MTLX{n}_{variable} or MTLX{n}_{variable}_{alias}
+    for n in 1..=esquema.cant_metaltex {
+        let key = format!("canales_{}", n);
+        if let Some(variables) = esquema.canales_metaltex.get(&key) {
+            for var in variables {
+                let base = format!("MTLX{}_{}", n, var.to_uppercase());
                 let alias = aliases.get(&base).cloned().unwrap_or_default();
                 if alias.is_empty() {
                     cols.push(base);

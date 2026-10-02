@@ -6,6 +6,10 @@ pub enum TipoInstrumento {
     Adam4118,
     #[serde(rename = "JANITZA_UMG509")]
     JanitzaUmg509,
+    #[serde(rename = "JANITZA_UMG503")]
+    JanitzaUmg503,
+    #[serde(rename = "METALTEX_MC62")]
+    MetaltexMc62,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

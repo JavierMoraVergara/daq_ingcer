@@ -6,6 +6,10 @@ export interface CanalesJanitza {
   [key: string]: string[]; // canales_1: ["v1","v2",...], canales_2: ["v1","c1",...]
 }
 
+export interface CanalesMetaltex {
+  [key: string]: string[]; // canales_1: ["pv","sv"], etc.
+}
+
 export interface Esquema {
   id: number;
   nombre: string;
@@ -20,6 +24,9 @@ export interface Esquema {
   cant_janitzas: number;
   instrumentos_janitza: number[];
   canales_janitzas: CanalesJanitza;
+  cant_metaltex: number;
+  instrumentos_metaltex: number[];
+  canales_metaltex: CanalesMetaltex;
 }
 
 export interface CrearEsquemaPayload {
@@ -29,6 +36,8 @@ export interface CrearEsquemaPayload {
   canales_adam: CanalesADAM;
   instrumentos_janitza: number[];
   canales_janitzas: CanalesJanitza;
+  instrumentos_metaltex: number[];
+  canales_metaltex: CanalesMetaltex;
 }
 
 export interface ActualizarEsquemaPayload {
@@ -38,4 +47,6 @@ export interface ActualizarEsquemaPayload {
   canales_adam?: CanalesADAM;
   instrumentos_janitza?: number[];
   canales_janitzas?: CanalesJanitza;
+  instrumentos_metaltex?: number[];
+  canales_metaltex?: CanalesMetaltex;
 }

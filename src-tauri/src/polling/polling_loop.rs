@@ -1,9 +1,12 @@
 use crate::modbus::adam::leer_adam;
 use crate::modbus::client::ModbusTcpClient;
-use crate::modbus::janitza::{leer_janitza, JanitzaVar};
+use crate::modbus::janitza::{leer_janitza, JanitzaVar, ModeloJanitza};
+use crate::modbus::metaltex::{leer_metaltex, MetaltexVar};
 use crate::persistence::csv_writer::CsvWriter;
 use crate::polling::scheduler::calcular_deadline;
-use crate::types::{Esquema, Instrumento, LecturaInstante, TipoTermocupla, ValorCanal};
+use crate::types::{
+    Esquema, Instrumento, LecturaInstante, TipoInstrumento, TipoTermocupla, ValorCanal,
+};
 use chrono::Utc;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -245,12 +248,18 @@ async fn leer_todos_instrumentos(config: &PollingConfig) -> Vec<ValorCanal> {
         .await
         {
             Ok(mut client) => {
+                let modelo = if instrumento.tipo == TipoInstrumento::JanitzaUmg503 {
+                    ModeloJanitza::Umg503
+                } else {
+                    ModeloJanitza::Umg509
+                };
                 leer_janitza(
                     &mut client,
                     instrumento.slave_id,
                     &variables,
                     instrumento.reintentos,
                     instrumento.timeout_ms,
+                    modelo,
                 )
                 .await
             }
@@ -271,6 +280,82 @@ async fn leer_todos_instrumentos(config: &PollingConfig) -> Vec<ValorCanal> {
                 columna,
                 valor: resultados.get(i).copied().flatten(),
                 unidad: var.map(|v| v.unidad()).unwrap_or("").to_string(),
+            });
+        }
+    }
+
+    // Read Metaltex MC62 instruments
+    for (idx, &inst_id) in config.esquema.instrumentos_metaltex.iter().enumerate() {
+        let n = idx + 1; // 1-indexed instrument number
+        let key = format!("canales_{}", n);
+
+        let variables_str = match config.esquema.canales_metaltex.get(&key) {
+            Some(v) => v.clone(),
+            None => continue,
+        };
+
+        let variables: Vec<MetaltexVar> = variables_str
+            .iter()
+            .filter_map(|s| MetaltexVar::from_str(s))
+            .collect();
+
+        // Find the instrument config
+        let instrumento = match config.instrumentos.iter().find(|i| i.id == inst_id) {
+            Some(inst) => inst,
+            None => {
+                for var_str in &variables_str {
+                    let base = format!("MTLX{}_{}", n, var_str.to_uppercase());
+                    let alias = config.aliases.get(&base).cloned().unwrap_or_default();
+                    let columna = if alias.is_empty() {
+                        base
+                    } else {
+                        format!("{}_{}", base, alias)
+                    };
+                    valores.push(ValorCanal {
+                        columna,
+                        valor: None,
+                        unidad: "°C".to_string(),
+                    });
+                }
+                continue;
+            }
+        };
+
+        // Try to connect and read
+        let resultados = match ModbusTcpClient::conectar(
+            &instrumento.direccion_ip,
+            instrumento.puerto,
+            instrumento.slave_id,
+            instrumento.timeout_ms,
+        )
+        .await
+        {
+            Ok(mut client) => {
+                leer_metaltex(
+                    &mut client,
+                    instrumento.slave_id,
+                    &variables,
+                    instrumento.reintentos,
+                    instrumento.timeout_ms,
+                )
+                .await
+            }
+            Err(_) => vec![None; variables.len()],
+        };
+
+        // Map results to ValorCanal
+        for (i, var_str) in variables_str.iter().enumerate() {
+            let base = format!("MTLX{}_{}", n, var_str.to_uppercase());
+            let alias = config.aliases.get(&base).cloned().unwrap_or_default();
+            let columna = if alias.is_empty() {
+                base
+            } else {
+                format!("{}_{}", base, alias)
+            };
+            valores.push(ValorCanal {
+                columna,
+                valor: resultados.get(i).copied().flatten(),
+                unidad: "°C".to_string(),
             });
         }
     }

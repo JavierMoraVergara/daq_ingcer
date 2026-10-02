@@ -4,22 +4,22 @@
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    FRONTEND (React)                       │
-│  src/views/          → Vistas principales                │
-│  src/components/     → Componentes UI                    │
-│  src/store/          → Estado global (Zustand)           │
-│  src/hooks/          → Hooks personalizados              │
-│  src/lib/            → Lógica pura + wrappers Tauri      │
-│  src/types/          → Interfaces TypeScript             │
+│                    FRONTEND (React)                     │
+│  src/views/          → Vistas principales               │
+│  src/components/     → Componentes UI                   │
+│  src/store/          → Estado global (Zustand)          │
+│  src/hooks/          → Hooks personalizados             │
+│  src/lib/            → Lógica pura + wrappers Tauri     │
+│  src/types/          → Interfaces TypeScript            │
 └───────────────────────────┬─────────────────────────────┘
                             │ invoke() / emit()
 ┌───────────────────────────┴─────────────────────────────┐
-│                    BACKEND (Rust/Tauri)                   │
-│  src/commands/       → IPC handlers (API del frontend)   │
-│  src/modbus/         → Comunicación con instrumentos     │
-│  src/polling/        → Loop de adquisición               │
-│  src/persistence/    → Lectura/escritura JSON + CSV      │
-│  src/types/          → Structs compartidos               │
+│                    BACKEND (Rust/Tauri)                 │
+│  src/commands/       → IPC handlers (API del frontend)  │
+│  src/modbus/         → Comunicación con instrumentos    │
+│  src/polling/        → Loop de adquisición              │
+│  src/persistence/    → Lectura/escritura JSON + CSV     │
+│  src/types/          → Structs compartidos              │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -51,6 +51,10 @@ pub enum TipoInstrumento {
     Adam4118,
     #[serde(rename = "JANITZA_UMG509")]
     JanitzaUmg509,
+    #[serde(rename = "JANITZA_UMG503")]
+    JanitzaUmg503,
+    #[serde(rename = "METALTEX_MC62")]
+    MetaltexMc62,
     #[serde(rename = "MI_NUEVO_INSTRUMENTO")]  // ← AGREGAR
     MiNuevoInstrumento,
 }

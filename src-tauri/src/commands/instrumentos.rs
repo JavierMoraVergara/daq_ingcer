@@ -79,6 +79,35 @@ pub async fn probar_conexion(
     puerto: u16,
     slave_id: u8,
     timeout_ms: u64,
-) -> Result<bool, String> {
-    Ok(ModbusTcpClient::probar_conexion(&ip, puerto, slave_id, timeout_ms).await)
+    registro_prueba: u16,
+) -> Result<ProbarConexionResult, String> {
+    let (gateway_ok, esclavo_ok) =
+        ModbusTcpClient::probar_conexion(&ip, puerto, slave_id, timeout_ms, registro_prueba)
+            .await;
+    Ok(ProbarConexionResult {
+        gateway_ok,
+        esclavo_ok,
+    })
+}
+
+#[derive(serde::Serialize)]
+pub struct ProbarConexionResult {
+    pub gateway_ok: bool,
+    pub esclavo_ok: bool,
+}
+
+/// Write the Set Value (SV) to a Metaltex MC62 controller.
+/// `valor` is the desired temperature in °C; scaling by the DP factor is
+/// handled inside the metaltex module.
+#[tauri::command]
+pub async fn escribir_sv_metaltex(
+    ip: String,
+    puerto: u16,
+    slave_id: u8,
+    timeout_ms: u64,
+    valor: f64,
+) -> Result<(), String> {
+    let mut client =
+        ModbusTcpClient::conectar(&ip, puerto, slave_id, timeout_ms).await?;
+    crate::modbus::metaltex::escribir_sv(&mut client, slave_id, valor, timeout_ms).await
 }

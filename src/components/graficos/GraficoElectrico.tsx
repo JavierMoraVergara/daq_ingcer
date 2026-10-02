@@ -160,7 +160,7 @@ export function GraficoElectrico({
             />
             <Tooltip
               formatter={(value: number) =>
-                value != null ? value.toFixed(1) : value
+                value != null ? value.toFixed(3) : value
               }
             />
             <Legend wrapperStyle={{ fontSize: 11 }} />

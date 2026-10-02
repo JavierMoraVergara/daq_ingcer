@@ -1,8 +1,9 @@
 import { useState } from "react";
 import type { TipoInstrumento, TipoTermocupla } from "../../types";
-import { tauriCmd } from "../../lib/tauriCommands";
+import { tauriCmd, type ProbarConexionResult } from "../../lib/tauriCommands";
 import adamImg from "../../assets/images/adam.png";
 import janitzaImg from "../../assets/images/janitza.png";
+import metaltexImg from "../../assets/images/md62.png";
 
 const ADAM_CANALES = [1, 2, 3, 4, 5, 6, 7, 8];
 
@@ -26,8 +27,35 @@ export function SelectorInstrumentos({
   onChange,
 }: SelectorInstrumentosProps) {
   const [testResults, setTestResults] = useState<
-    Record<number, boolean | null>
+    Record<number, ProbarConexionResult | null>
   >({});
+  // Valor de SV a escribir por instrumento Metaltex (por índice)
+  const [svInputs, setSvInputs] = useState<Record<number, string>>({});
+  const [svStatus, setSvStatus] = useState<Record<number, string>>({});
+
+  const esMetaltex = (tipo: TipoInstrumento) => tipo === "METALTEX_MC62";
+
+  const escribirSv = async (index: number) => {
+    const inst = instrumentos[index];
+    const valor = parseFloat(svInputs[index] ?? "");
+    if (Number.isNaN(valor)) {
+      setSvStatus({ ...svStatus, [index]: "Valor inválido" });
+      return;
+    }
+    setSvStatus({ ...svStatus, [index]: "Enviando..." });
+    try {
+      await tauriCmd.escribirSvMetaltex(
+        inst.direccion_ip,
+        inst.puerto,
+        inst.slave_id,
+        2000,
+        valor,
+      );
+      setSvStatus({ ...svStatus, [index]: `SV = ${valor} °C enviado ✓` });
+    } catch (e) {
+      setSvStatus({ ...svStatus, [index]: `Error: ${String(e)}` });
+    }
+  };
 
   const addInstrumento = (tipo: TipoInstrumento) => {
     const nuevo: InstrumentoConfig = {
@@ -66,15 +94,29 @@ export function SelectorInstrumentos({
   const probarConexion = async (index: number) => {
     const inst = instrumentos[index];
     try {
-      const ok = await tauriCmd.probarConexion(
+      // Registro de prueba según el equipo:
+      // - UMG503: 1012 (V1), no tiene registro 0
+      // - Metaltex MC62: 64 (PV)
+      // - Resto (ADAM, UMG509): registro 0
+      const registroPrueba =
+        inst.tipo === "JANITZA_UMG503"
+          ? 1012
+          : inst.tipo === "METALTEX_MC62"
+            ? 64
+            : 0;
+      const result = await tauriCmd.probarConexion(
         inst.direccion_ip,
         inst.puerto,
         inst.slave_id,
         2000,
+        registroPrueba,
       );
-      setTestResults({ ...testResults, [index]: ok });
+      setTestResults({ ...testResults, [index]: result });
     } catch {
-      setTestResults({ ...testResults, [index]: false });
+      setTestResults({
+        ...testResults,
+        [index]: { gateway_ok: false, esclavo_ok: false },
+      });
     }
   };
 
@@ -95,6 +137,20 @@ export function SelectorInstrumentos({
         >
           + Janitza UMG509
         </button>
+        <button
+          type="button"
+          onClick={() => addInstrumento("JANITZA_UMG503")}
+          className="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700"
+        >
+          + Janitza UMG503
+        </button>
+        <button
+          type="button"
+          onClick={() => addInstrumento("METALTEX_MC62")}
+          className="px-3 py-1.5 text-sm bg-orange-600 text-white rounded hover:bg-orange-700"
+        >
+          + Metaltex MC62
+        </button>
       </div>
 
       {instrumentos.map((inst, idx) => (
@@ -102,13 +158,25 @@ export function SelectorInstrumentos({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <img
-                src={inst.tipo === "ADAM4118" ? adamImg : janitzaImg}
+                src={
+                  inst.tipo === "ADAM4118"
+                    ? adamImg
+                    : inst.tipo === "METALTEX_MC62"
+                      ? metaltexImg
+                      : janitzaImg
+                }
                 alt={inst.tipo}
                 className="h-12 w-auto object-contain rounded border border-gray-200 p-1 bg-white"
               />
               <span className="text-sm font-medium text-gray-700">
-                {inst.tipo === "ADAM4118" ? "ADAM4118" : "Janitza UMG509"} #
-                {idx + 1}
+                {inst.tipo === "ADAM4118"
+                  ? "ADAM4118"
+                  : inst.tipo === "JANITZA_UMG503"
+                    ? "Janitza UMG503"
+                    : inst.tipo === "METALTEX_MC62"
+                      ? "Metaltex MC62"
+                      : "Janitza UMG509"}{" "}
+                #{idx + 1}
               </span>
             </div>
             <button
@@ -176,6 +244,26 @@ export function SelectorInstrumentos({
                   </label>
                 ))}
               </div>
+            ) : esMetaltex(inst.tipo) ? (
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { key: "pv", label: "PV (lectura)" },
+                  { key: "sv", label: "SV (consigna)" },
+                ].map((c) => (
+                  <label
+                    key={c.key}
+                    className="flex items-center gap-2 text-sm px-2 py-1.5 border border-gray-200 rounded hover:bg-gray-50 cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={inst.canales.includes(c.key)}
+                      onChange={() => toggleCanal(idx, c.key)}
+                      className="rounded"
+                    />
+                    {c.label}
+                  </label>
+                ))}
+              </div>
             ) : (
               <div className="space-y-2">
                 <div>
@@ -235,25 +323,27 @@ export function SelectorInstrumentos({
                     ))}
                   </div>
                 </div>
-                <div>
-                  <p className="text-xs text-gray-500 mb-1">Energía</p>
-                  <div className="grid grid-cols-3 gap-2">
-                    {["e1", "e2", "e3"].map((v) => (
-                      <label
-                        key={v}
-                        className="flex items-center gap-2 text-sm px-2 py-1.5 border border-gray-200 rounded hover:bg-gray-50 cursor-pointer"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={inst.canales.includes(v)}
-                          onChange={() => toggleCanal(idx, v)}
-                          className="rounded"
-                        />
-                        {v.toUpperCase()}
-                      </label>
-                    ))}
+                {inst.tipo !== "JANITZA_UMG503" && (
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">Energía</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {["e1", "e2", "e3"].map((v) => (
+                        <label
+                          key={v}
+                          className="flex items-center gap-2 text-sm px-2 py-1.5 border border-gray-200 rounded hover:bg-gray-50 cursor-pointer"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={inst.canales.includes(v)}
+                            onChange={() => toggleCanal(idx, v)}
+                            className="rounded"
+                          />
+                          {v.toUpperCase()}
+                        </label>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
                 <div>
                   <p className="text-xs text-gray-500 mb-1">
                     Factor de Potencia
@@ -324,6 +414,36 @@ export function SelectorInstrumentos({
             </div>
           )}
 
+          {esMetaltex(inst.tipo) && (
+            <div>
+              <p className="text-xs font-medium text-gray-600 mb-1">
+                Cambiar Set Value (SV):
+              </p>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  step="0.1"
+                  placeholder="Temp. °C"
+                  value={svInputs[idx] ?? ""}
+                  onChange={(e) =>
+                    setSvInputs({ ...svInputs, [idx]: e.target.value })
+                  }
+                  className="px-2 py-1 border border-gray-300 rounded text-sm w-28"
+                />
+                <button
+                  type="button"
+                  onClick={() => escribirSv(idx)}
+                  className="px-2 py-1 text-xs bg-orange-600 text-white rounded hover:bg-orange-700"
+                >
+                  Enviar SV
+                </button>
+                {svStatus[idx] && (
+                  <span className="text-xs text-gray-600">{svStatus[idx]}</span>
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -332,11 +452,32 @@ export function SelectorInstrumentos({
             >
               Probar Conexión
             </button>
-            {testResults[idx] === true && (
-              <span className="text-xs text-green-600">✓ Conectado</span>
-            )}
-            {testResults[idx] === false && (
-              <span className="text-xs text-red-600">✗ Fallo conexión</span>
+            {testResults[idx] !== undefined && testResults[idx] !== null && (
+              <div className="flex flex-col gap-0.5 text-xs">
+                <span
+                  className={
+                    testResults[idx]!.gateway_ok
+                      ? "text-green-600"
+                      : "text-red-600"
+                  }
+                >
+                  {testResults[idx]!.gateway_ok ? "✓" : "✗"} Gateway
+                </span>
+                <span
+                  className={
+                    testResults[idx]!.esclavo_ok
+                      ? "text-green-600"
+                      : testResults[idx]!.gateway_ok
+                        ? "text-orange-500"
+                        : "text-gray-400"
+                  }
+                >
+                  {testResults[idx]!.esclavo_ok ? "✓" : "✗"} Esclavo
+                  {!testResults[idx]!.esclavo_ok &&
+                    testResults[idx]!.gateway_ok &&
+                    " (sin respuesta)"}
+                </span>
+              </div>
             )}
           </div>
         </div>

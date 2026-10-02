@@ -14,6 +14,7 @@ export interface RangoCota {
 interface CotasControlProps {
   rango: RangoCota;
   onRangoChange: (rango: RangoCota) => void;
+  onReset?: () => void;
   totalLecturas: number;
   timestamps?: string[];
 }
@@ -33,6 +34,7 @@ function formatTimestamp(ts: string | undefined): string {
 export function CotasControl({
   rango,
   onRangoChange,
+  onReset,
   totalLecturas,
   timestamps,
 }: CotasControlProps) {
@@ -48,7 +50,9 @@ export function CotasControl({
           </span>
           <button
             type="button"
-            onClick={() => onRangoChange({ inicio: 0, fin: max })}
+            onClick={() =>
+              onReset ? onReset() : onRangoChange({ inicio: 0, fin: max })
+            }
             className="text-xs text-blue-600 hover:text-blue-800 font-medium"
           >
             Resetear

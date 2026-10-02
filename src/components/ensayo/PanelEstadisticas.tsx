@@ -1,5 +1,6 @@
 import type { Estadisticas } from "../../lib/estadisticas";
 import type { AliasMap } from "../../types";
+import { formatearValorPorColumna } from "../../lib/formato";
 
 interface PanelEstadisticasProps {
   estadisticas: Map<string, Estadisticas>;
@@ -59,7 +60,7 @@ export function PanelEstadisticas({
                     key={col}
                     className="text-right px-2 py-1 font-mono text-gray-800"
                   >
-                    {val === null ? "—" : val.toFixed(1)}
+                    {formatearValorPorColumna(val, col)}
                   </td>
                 );
               })}

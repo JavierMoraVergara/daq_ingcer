@@ -6,6 +6,7 @@ import { CollapsibleSection } from "../components/shared/CollapsibleSection";
 import { CountdownTimer } from "../components/shared/CountdownTimer";
 import { PanelInstantaneo } from "../components/ensayo/PanelInstantaneo";
 import { PanelEstadisticas } from "../components/ensayo/PanelEstadisticas";
+import { ControlSetValue } from "../components/ensayo/ControlSetValue";
 import { GraficoTemperatura } from "../components/graficos/GraficoTemperatura";
 import { GraficoElectrico } from "../components/graficos/GraficoElectrico";
 import {
@@ -26,7 +27,16 @@ export function RevisarEnsayoView() {
   const [loadingInicial, setLoadingInicial] = useState(false);
   const [page, setPage] = useState(0);
   const [rangoCota, setRangoCota] = useState<RangoCota>({ inicio: 0, fin: 0 });
+  // true cuando el usuario ajustó manualmente el rango; mientras sea false,
+  // el rango sigue automáticamente al total de datos durante la captura.
+  const [rangoManual, setRangoManual] = useState(false);
   const [showTimerModal, setShowTimerModal] = useState(false);
+
+  // Wrapper: cuando el usuario mueve el slider, marcamos el rango como manual
+  const handleRangoChange = useCallback((r: RangoCota) => {
+    setRangoManual(true);
+    setRangoCota(r);
+  }, []);
 
   const handleTimerFinish = async () => {
     setShowTimerModal(true);
@@ -72,7 +82,8 @@ export function RevisarEnsayoView() {
     try {
       const result = await tauriCmd.cargarDatosEnsayo(id);
       setDatos(result);
-      // Reset rango to full range
+      // Reset rango to full range y volver a modo automático
+      setRangoManual(false);
       setRangoCota({
         inicio: 0,
         fin: Math.max(0, result.timestamps.length - 1),
@@ -103,19 +114,15 @@ export function RevisarEnsayoView() {
     };
   }, [seleccionado, ensayos, cargarDatosSilencioso]);
 
-  // Update rango.fin when new data arrives (for running ensayos)
+  // Update rango when new data arrives (for running ensayos).
+  // Si el usuario no ha ajustado el rango manualmente, lo mantenemos abarcando
+  // el total de datos (inicio=0, fin=último), para que el gráfico muestre todo.
   useEffect(() => {
-    if (datos && datos.timestamps.length > 0) {
+    if (datos && datos.timestamps.length > 0 && !rangoManual) {
       const maxIdx = datos.timestamps.length - 1;
-      // Only auto-extend fin if it was already at the end
-      setRangoCota((prev) => {
-        if (prev.fin >= maxIdx - 1 || prev.fin === 0) {
-          return { ...prev, fin: maxIdx };
-        }
-        return prev;
-      });
+      setRangoCota({ inicio: 0, fin: maxIdx });
     }
-  }, [datos]);
+  }, [datos, rangoManual]);
 
   const handleEliminar = async (id: number) => {
     if (!confirm("¿Eliminar este ensayo y su archivo CSV?")) return;
@@ -210,7 +217,7 @@ export function RevisarEnsayoView() {
         return {
           columna: col,
           valor,
-          unidad: col.startsWith("ADAM") ? "°C" : "",
+          unidad: col.startsWith("ADAM") || col.startsWith("MTLX") ? "°C" : "",
         };
       }),
     }));
@@ -234,7 +241,10 @@ export function RevisarEnsayoView() {
       (h) => h !== "id" && h !== "fecha_hora",
     );
     return {
-      columnasAdam: cols.filter((c) => c.startsWith("ADAM")),
+      // El MC62 (MTLX) mide temperatura: va junto a los ADAM en el gráfico de temperatura
+      columnasAdam: cols.filter(
+        (c) => c.startsWith("ADAM") || c.startsWith("MTLX"),
+      ),
       columnasJanitza: cols.filter((c) => c.startsWith("JTZA")),
     };
   }, [datos]);
@@ -460,6 +470,11 @@ export function RevisarEnsayoView() {
                 />
               </CollapsibleSection>
 
+              {/* Control de Set Value (solo durante ejecución, si hay MC62) */}
+              {ensayoSeleccionado?.estado === "ejecutando" && (
+                <ControlSetValue esquemaId={ensayoSeleccionado.esquema_id} />
+              )}
+
               {/* 2. Temperature graph */}
               {columnasAdam.length > 0 && (
                 <CollapsibleSection
@@ -497,7 +512,14 @@ export function RevisarEnsayoView() {
               >
                 <CotasControl
                   rango={rangoCota}
-                  onRangoChange={setRangoCota}
+                  onRangoChange={handleRangoChange}
+                  onReset={() => {
+                    setRangoManual(false);
+                    setRangoCota({
+                      inicio: 0,
+                      fin: Math.max(0, lecturas.length - 1),
+                    });
+                  }}
                   totalLecturas={lecturas.length}
                   timestamps={datos.timestamps}
                 />

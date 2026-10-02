@@ -11,7 +11,7 @@ interface EsquemasState {
   deshabilitarEsquema: (id: number) => Promise<void>;
 }
 
-export const useEsquemasStore = create<EsquemasState>((set, get) => ({
+export const useEsquemasStore = create<EsquemasState>((set) => ({
   esquemas: [],
   loading: false,
   error: null,
@@ -28,16 +28,16 @@ export const useEsquemasStore = create<EsquemasState>((set, get) => ({
 
   crearEsquema: async (payload) => {
     const esquema = await tauriCmd.crearEsquema(payload);
-    set({ esquemas: [...get().esquemas, esquema] });
+    // Reload all esquemas from backend to ensure consistency
+    const esquemas = await tauriCmd.listarEsquemas();
+    set({ esquemas });
     return esquema;
   },
 
   deshabilitarEsquema: async (id) => {
     await tauriCmd.deshabilitarEsquema(id);
-    set({
-      esquemas: get().esquemas.map((e) =>
-        e.id === id ? { ...e, vigente: false } : e,
-      ),
-    });
+    // Reload from backend to ensure consistency
+    const esquemas = await tauriCmd.listarEsquemas();
+    set({ esquemas });
   },
 }));

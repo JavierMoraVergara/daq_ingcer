@@ -6,7 +6,7 @@ import {
 import { useEsquemasStore } from "../../store/useEsquemasStore";
 import { useUiStore } from "../../store/useUiStore";
 import { tauriCmd } from "../../lib/tauriCommands";
-import type { CanalesADAM, CanalesJanitza } from "../../types";
+import type { CanalesADAM, CanalesJanitza, CanalesMetaltex } from "../../types";
 
 type Step = 1 | 2 | 3;
 
@@ -26,7 +26,9 @@ export function CrearEsquemaModal() {
     setError(null);
     try {
       const adams = instrumentos.filter((i) => i.tipo === "ADAM4118");
-      const janitzas = instrumentos.filter((i) => i.tipo === "JANITZA_UMG509");
+      const janitzas = instrumentos.filter(
+        (i) => i.tipo === "JANITZA_UMG509" || i.tipo === "JANITZA_UMG503",
+      );
 
       // First, create each instrument in instrumentos.json and get real IDs
       const adamIds: number[] = [];
@@ -59,6 +61,22 @@ export function CrearEsquemaModal() {
         janitzaIds.push(inst.id);
       }
 
+      const metaltex = instrumentos.filter((i) => i.tipo === "METALTEX_MC62");
+      const metaltexIds: number[] = [];
+      for (const m of metaltex) {
+        const inst = await tauriCmd.crearInstrumento({
+          tipo: m.tipo,
+          nombre: m.nombre || `MTLX_${metaltexIds.length + 1}`,
+          direccion_ip: m.direccion_ip,
+          puerto: m.puerto,
+          slave_id: m.slave_id,
+          timeout_ms: 2000,
+          reintentos: 3,
+          tipo_termocupla: null,
+        });
+        metaltexIds.push(inst.id);
+      }
+
       const canales_adam: CanalesADAM = {};
       adams.forEach((a, idx) => {
         canales_adam[`canales_${idx + 1}`] = a.canales as number[];
@@ -69,6 +87,11 @@ export function CrearEsquemaModal() {
         canales_janitzas[`canales_${idx + 1}`] = j.canales as string[];
       });
 
+      const canales_metaltex: CanalesMetaltex = {};
+      metaltex.forEach((m, idx) => {
+        canales_metaltex[`canales_${idx + 1}`] = m.canales as string[];
+      });
+
       await crearEsquema({
         nombre,
         descripcion,
@@ -76,6 +99,8 @@ export function CrearEsquemaModal() {
         canales_adam,
         instrumentos_janitza: janitzaIds,
         canales_janitzas,
+        instrumentos_metaltex: metaltexIds,
+        canales_metaltex,
       });
 
       cerrarModal();

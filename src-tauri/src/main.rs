@@ -52,6 +52,7 @@ fn main() {
             commands::instrumentos::crear_instrumento,
             commands::instrumentos::actualizar_instrumento,
             commands::instrumentos::probar_conexion,
+            commands::instrumentos::escribir_sv_metaltex,
             commands::esquemas::listar_esquemas,
             commands::esquemas::crear_esquema,
             commands::esquemas::actualizar_esquema,
