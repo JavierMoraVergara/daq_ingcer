@@ -7,6 +7,8 @@ use tokio::time::sleep;
 pub enum ModeloJanitza {
     Umg509,
     Umg503,
+    /// ADL10-E: analizador monofásico, registros uint16 escalados.
+    Adl10e,
 }
 
 /// Janitza variable definitions. Each variable occupies 2 consecutive registers
@@ -31,6 +33,33 @@ impl JanitzaVar {
         match modelo {
             ModeloJanitza::Umg509 => Some(self.registro_inicio_509()),
             ModeloJanitza::Umg503 => self.registro_inicio_503(),
+            ModeloJanitza::Adl10e => self.registro_inicio_adl10e(),
+        }
+    }
+
+    /// ADL10-E register map (UInt16, un registro por variable). Monofásico:
+    /// solo existen V1, C1, P1, FP1 y F. Registros 13 y 14 reservados.
+    fn registro_inicio_adl10e(&self) -> Option<u16> {
+        match self {
+            JanitzaVar::V1 => Some(11),
+            JanitzaVar::C1 => Some(12),
+            JanitzaVar::P1 => Some(15),
+            JanitzaVar::Fp1 => Some(16),
+            JanitzaVar::F => Some(17),
+            // Energía: UINT32 big-endian (ABCD) en registros 0 y 1
+            JanitzaVar::E1 => Some(0),
+            _ => None,
+        }
+    }
+
+    /// Divisor del valor crudo UInt16 del ADL10-E.
+    fn divisor_adl10e(&self) -> f64 {
+        match self {
+            JanitzaVar::V1 => 10.0,
+            JanitzaVar::C1 => 100.0,
+            JanitzaVar::Fp1 => 1000.0,
+            JanitzaVar::F => 100.0,
+            _ => 1.0, // P1: valor directo
         }
     }
 
@@ -184,12 +213,37 @@ pub async fn leer_janitza(
 
         let mut valor: Option<f64> = None;
 
+        // ADL10-E: UInt16 con factor de escala; la energía (E1) es UINT32 en 2 registros
+        if modelo == ModeloJanitza::Adl10e {
+            let es_energia = matches!(variable, JanitzaVar::E1);
+            let cantidad: u16 = if es_energia { 2 } else { 1 };
+            for _intento in 0..=reintentos {
+                match client.leer_holding_registers_slave(slave_id, addr, cantidad, timeout_ms).await {
+                    Ok(regs) if regs.len() == cantidad as usize => {
+                        valor = Some(if es_energia {
+                            // regs[0] = palabra alta (MSW), regs[1] = palabra baja (LSW)
+                            // Resolución 0,01 kWh = 10 Wh por cuenta → se entrega en Wh
+                            (((regs[0] as u32) << 16) | regs[1] as u32) as f64 * 10.0
+                        } else {
+                            regs[0] as f64 / variable.divisor_adl10e()
+                        });
+                        break;
+                    }
+                    _ => sleep(Duration::from_millis(100)).await,
+                }
+            }
+            resultados.push(valor);
+            continue;
+        }
+
         for _intento in 0..=reintentos {
             match client.leer_holding_registers_slave(slave_id, addr, 2, timeout_ms).await {
                 Ok(regs) if regs.len() == 2 => {
                     let float_val = match modelo {
                         ModeloJanitza::Umg503 => registros_a_float_reverse(regs[0], regs[1]),
-                        ModeloJanitza::Umg509 => registros_a_float(regs[0], regs[1]),
+                        ModeloJanitza::Umg509 | ModeloJanitza::Adl10e => {
+                            registros_a_float(regs[0], regs[1])
+                        }
                     };
                     valor = Some(float_val as f64);
                     break;

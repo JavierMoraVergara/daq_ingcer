@@ -4,6 +4,7 @@ import { AliasEditor } from "./AliasEditor";
 import { useUiStore } from "../../store/useUiStore";
 import { useEnsayoStore } from "../../store/useEnsayoStore";
 import { tauriCmd } from "../../lib/tauriCommands";
+import { useTiposJanitza } from "../../hooks/useTiposJanitza";
 import type { Esquema, AliasMap } from "../../types";
 
 interface CrearEnsayoModalProps {
@@ -18,6 +19,7 @@ export function CrearEnsayoModal({ esquema }: CrearEnsayoModalProps) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const tiposJanitza = useTiposJanitza(esquema.id);
   const cerrarModal = useUiStore((s) => s.cerrarModal);
   const setVista = useUiStore((s) => s.setVista);
   const cargarEnsayos = useEnsayoStore((s) => s.cargarEnsayos);
@@ -112,6 +114,7 @@ export function CrearEnsayoModal({ esquema }: CrearEnsayoModalProps) {
             <AliasEditor
               columnas={columnas}
               aliases={aliases}
+              tiposJanitza={tiposJanitza}
               onChange={setAliases}
             />
           )}

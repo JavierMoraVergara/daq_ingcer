@@ -12,6 +12,7 @@ import {
 import type { LecturaInstante, AliasMap } from "../../types";
 import type { CotasConfig } from "./CotasControl";
 import type { Estadisticas } from "../../lib/estadisticas";
+import { nombreColumna } from "../../lib/formato";
 
 const LINE_COLORS = [
   "#7c3aed",
@@ -39,6 +40,7 @@ interface GraficoElectricoProps {
   estadisticas?: Map<string, Estadisticas>;
   cotas?: CotasConfig;
   aliases?: AliasMap;
+  tiposJanitza?: string[];
 }
 
 export function GraficoElectrico({
@@ -47,6 +49,7 @@ export function GraficoElectrico({
   estadisticas,
   cotas,
   aliases = {},
+  tiposJanitza = [],
 }: GraficoElectricoProps) {
   const [tabActivo, setTabActivo] = useState("V");
 
@@ -155,12 +158,12 @@ export function GraficoElectrico({
               tick={{ fontSize: 10 }}
               width={60}
               tickFormatter={(v: number) =>
-                typeof v === "number" ? v.toFixed(1) : v
+                typeof v === "number" ? v.toFixed(tabActivo === "E" ? 0 : 1) : v
               }
             />
             <Tooltip
               formatter={(value: number) =>
-                value != null ? value.toFixed(3) : value
+                value != null ? value.toFixed(tabActivo === "E" ? 0 : 3) : value
               }
             />
             <Legend wrapperStyle={{ fontSize: 11 }} />
@@ -169,7 +172,7 @@ export function GraficoElectrico({
                 key={col}
                 type="monotone"
                 dataKey={col}
-                name={aliases[col] || col}
+                name={aliases[col] || nombreColumna(col, tiposJanitza)}
                 stroke={LINE_COLORS[i % LINE_COLORS.length]}
                 dot={false}
                 strokeWidth={1.5}

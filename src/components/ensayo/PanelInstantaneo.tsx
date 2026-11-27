@@ -1,15 +1,18 @@
 import { useState } from "react";
 import type { LecturaInstante, AliasMap } from "../../types";
-import { formatearValor } from "../../lib/formato";
+import { formatearValorPorColumna, etiquetaInstrumento } from "../../lib/formato";
 
 interface PanelInstantaneoProps {
   lectura: LecturaInstante | null;
   aliases?: AliasMap;
+  /** Tipos de los instrumentos Janitza/ADL10-E del esquema, en orden. */
+  tiposJanitza?: string[];
 }
 
 export function PanelInstantaneo({
   lectura,
   aliases = {},
+  tiposJanitza = [],
 }: PanelInstantaneoProps) {
   const [highlighted, setHighlighted] = useState<Set<string>>(new Set());
 
@@ -38,11 +41,17 @@ export function PanelInstantaneo({
       {Array.from(groups.entries()).map(([prefix, valores]) => (
         <div key={prefix}>
           <p className="text-xs font-medium text-gray-500 mb-1 uppercase">
-            {prefix}
+            {etiquetaInstrumento(prefix, tiposJanitza)}
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-1.5">
             {valores.map((v) => {
-              const nombre = aliases[v.columna] || v.columna;
+              const prefijoCol = v.columna.split("_")[0];
+              const etiqueta = etiquetaInstrumento(prefijoCol, tiposJanitza);
+              const nombre =
+                aliases[v.columna] ||
+                (etiqueta !== prefijoCol
+                  ? v.columna.replace(prefijoCol, etiqueta.replace(/ /g, ""))
+                  : v.columna);
               const isNull = v.valor === null;
               const isHighlighted = highlighted.has(v.columna);
               return (
@@ -76,7 +85,7 @@ export function PanelInstantaneo({
                   >
                     {isNull
                       ? "NULL"
-                      : `${formatearValor(v.valor, v.unidad)} ${v.unidad}`}
+                      : `${formatearValorPorColumna(v.valor, v.columna)} ${v.unidad}`}
                   </div>
                 </div>
               );

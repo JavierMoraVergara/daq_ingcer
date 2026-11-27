@@ -248,10 +248,10 @@ async fn leer_todos_instrumentos(config: &PollingConfig) -> Vec<ValorCanal> {
         .await
         {
             Ok(mut client) => {
-                let modelo = if instrumento.tipo == TipoInstrumento::JanitzaUmg503 {
-                    ModeloJanitza::Umg503
-                } else {
-                    ModeloJanitza::Umg509
+                let modelo = match instrumento.tipo {
+                    TipoInstrumento::JanitzaUmg503 => ModeloJanitza::Umg503,
+                    TipoInstrumento::Adl10e => ModeloJanitza::Adl10e,
+                    _ => ModeloJanitza::Umg509,
                 };
                 leer_janitza(
                     &mut client,
