@@ -1,7 +1,35 @@
-import type { Esquema } from "../../types";
+import type { Esquema, Instrumento } from "../../types";
+
+const ETIQUETAS: Record<string, string> = {
+  ADAM4118: "ADAM4118",
+  JANITZA_UMG509: "Janitza UMG509",
+  JANITZA_UMG503: "Janitza UMG503",
+  METALTEX_MC62: "Metaltex MC62",
+  ADL10_E: "ADL10-E",
+};
+
+/** Cuenta los instrumentos del esquema agrupados por tipo real. */
+function contarPorTipo(
+  esquema: Esquema,
+  instrumentos: Instrumento[],
+): [string, number][] {
+  const ids = [
+    ...esquema.instrumentos_adam,
+    ...esquema.instrumentos_janitza,
+    ...esquema.instrumentos_metaltex,
+  ];
+  const conteo = new Map<string, number>();
+  for (const id of ids) {
+    const tipo = instrumentos.find((i) => i.id === id)?.tipo;
+    const etiqueta = tipo ? (ETIQUETAS[tipo] ?? tipo) : "Desconocido";
+    conteo.set(etiqueta, (conteo.get(etiqueta) ?? 0) + 1);
+  }
+  return Array.from(conteo.entries());
+}
 
 interface EsquemaCardProps {
   esquema: Esquema;
+  instrumentos: Instrumento[];
   onCrearEnsayo: (esquema: Esquema) => void;
   onEditar: (esquema: Esquema) => void;
   onDeshabilitar: (esquema: Esquema) => void;
@@ -9,11 +37,13 @@ interface EsquemaCardProps {
 
 export function EsquemaCard({
   esquema,
+  instrumentos,
   onCrearEnsayo,
   onEditar,
   onDeshabilitar,
 }: EsquemaCardProps) {
-  const totalInstrumentos = esquema.cant_adam + esquema.cant_janitzas;
+  const porTipo = contarPorTipo(esquema, instrumentos);
+  const totalInstrumentos = porTipo.reduce((a, [, n]) => a + n, 0);
 
   return (
     <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
@@ -36,10 +66,13 @@ export function EsquemaCard({
         <p className="text-sm text-gray-600 mb-3">{esquema.descripcion}</p>
       )}
 
-      <div className="flex gap-4 text-sm text-gray-500 mb-4">
+      <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-500 mb-4">
         <span>Instrumentos: {totalInstrumentos}</span>
-        <span>ADAM: {esquema.cant_adam}</span>
-        <span>Janitza: {esquema.cant_janitzas}</span>
+        {porTipo.map(([etiqueta, n]) => (
+          <span key={etiqueta}>
+            {etiqueta}: {n}
+          </span>
+        ))}
         <span>v{esquema.version}</span>
       </div>
 

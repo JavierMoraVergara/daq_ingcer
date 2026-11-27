@@ -27,7 +27,10 @@ export function CrearEsquemaModal() {
     try {
       const adams = instrumentos.filter((i) => i.tipo === "ADAM4118");
       const janitzas = instrumentos.filter(
-        (i) => i.tipo === "JANITZA_UMG509" || i.tipo === "JANITZA_UMG503",
+        (i) =>
+          i.tipo === "JANITZA_UMG509" ||
+          i.tipo === "JANITZA_UMG503" ||
+          i.tipo === "ADL10_E",
       );
 
       // First, create each instrument in instrumentos.json and get real IDs

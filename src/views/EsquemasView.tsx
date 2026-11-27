@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { tauriCmd } from "../lib/tauriCommands";
 import { useEsquemasStore } from "../store/useEsquemasStore";
 import { useEnsayoStore } from "../store/useEnsayoStore";
 import { useUiStore } from "../store/useUiStore";
@@ -7,7 +8,7 @@ import { CrearEsquemaModal } from "../components/esquemas/CrearEsquemaModal";
 import { EditarEsquemaModal } from "../components/esquemas/EditarEsquemaModal";
 import { CrearEnsayoModal } from "../components/ensayo/CrearEnsayoModal";
 import { ConfirmModal } from "../components/shared/ConfirmModal";
-import type { Esquema } from "../types";
+import type { Esquema, Instrumento } from "../types";
 
 export function EsquemasView() {
   const esquemas = useEsquemasStore((s) => s.esquemas);
@@ -25,6 +26,15 @@ export function EsquemasView() {
   const [esquemaParaEditar, setEsquemaParaEditar] = useState<Esquema | null>(
     null,
   );
+
+  const [instrumentos, setInstrumentos] = useState<Instrumento[]>([]);
+  useEffect(() => {
+    tauriCmd
+      .listarInstrumentos()
+      .then(setInstrumentos)
+      .catch(() => {});
+    // Recarga al cambiar los esquemas (p. ej. tras editar uno)
+  }, [esquemas]);
 
   const esquemasFiltrados = esquemas.filter((e) => e.vigente);
 
@@ -81,6 +91,7 @@ export function EsquemasView() {
             <EsquemaCard
               key={esquema.id}
               esquema={esquema}
+              instrumentos={instrumentos}
               onCrearEnsayo={handleCrearEnsayo}
               onEditar={() => handleEditar(esquema)}
               onDeshabilitar={handleDeshabilitar}

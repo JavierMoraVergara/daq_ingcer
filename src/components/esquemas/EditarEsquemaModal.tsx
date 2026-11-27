@@ -70,8 +70,8 @@ export function EditarEsquemaModal({
 
           configs.push({
             tipo:
-              inst?.tipo === "JANITZA_UMG503"
-                ? "JANITZA_UMG503"
+              inst?.tipo === "JANITZA_UMG503" || inst?.tipo === "ADL10_E"
+                ? inst.tipo
                 : "JANITZA_UMG509",
             nombre: inst?.nombre || `JTZA_${i + 1}`,
             direccion_ip: inst?.direccion_ip || "",
@@ -119,7 +119,10 @@ export function EditarEsquemaModal({
     try {
       const adams = instrumentos.filter((i) => i.tipo === "ADAM4118");
       const janitzas = instrumentos.filter(
-        (i) => i.tipo === "JANITZA_UMG509" || i.tipo === "JANITZA_UMG503",
+        (i) =>
+          i.tipo === "JANITZA_UMG509" ||
+          i.tipo === "JANITZA_UMG503" ||
+          i.tipo === "ADL10_E",
       );
 
       // Create/update instruments in instrumentos.json

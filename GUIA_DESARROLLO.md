@@ -55,6 +55,8 @@ pub enum TipoInstrumento {
     JanitzaUmg503,
     #[serde(rename = "METALTEX_MC62")]
     MetaltexMc62,
+    #[serde(rename = "ADL10_E")]
+    Adl10e,
     #[serde(rename = "MI_NUEVO_INSTRUMENTO")]  // ← AGREGAR
     MiNuevoInstrumento,
 }

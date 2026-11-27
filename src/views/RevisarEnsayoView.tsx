@@ -14,6 +14,7 @@ import {
   type RangoCota,
 } from "../components/graficos/CotasControl";
 import { tauriCmd } from "../lib/tauriCommands";
+import { useTiposJanitza } from "../hooks/useTiposJanitza";
 import type { LecturaInstante, DatosEnsayo } from "../types";
 
 const PAGE_SIZE = 5;
@@ -251,6 +252,13 @@ export function RevisarEnsayoView() {
 
   const ensayoSeleccionado = ensayos.find((e) => e.id === seleccionado);
 
+  // Tipos de los instrumentos eléctricos del esquema (para etiquetas legibles)
+  const tiposJanitza = useTiposJanitza(ensayoSeleccionado?.esquema_id);
+  const tituloElectrico =
+    tiposJanitza.length > 0 && tiposJanitza.every((t) => t === "ADL10_E")
+      ? "Variables Eléctricas (ADL10-E)"
+      : "Variables Eléctricas";
+
   const formatDuracion = (inicio: string, fin: string | null): string => {
     if (!fin) return "en curso";
     const ms = new Date(fin).getTime() - new Date(inicio).getTime();
@@ -467,6 +475,7 @@ export function RevisarEnsayoView() {
                 <PanelInstantaneo
                   lectura={ultimaLectura}
                   aliases={ensayoSeleccionado?.aliases}
+                  tiposJanitza={tiposJanitza}
                 />
               </CollapsibleSection>
 
@@ -492,15 +501,13 @@ export function RevisarEnsayoView() {
 
               {/* 3. Electrical graph */}
               {columnasJanitza.length > 0 && (
-                <CollapsibleSection
-                  title="Variables Eléctricas"
-                  defaultOpen={true}
-                >
+                <CollapsibleSection title={tituloElectrico} defaultOpen={true}>
                   <GraficoElectrico
                     lecturas={lecturasEnRango}
                     columnas={columnasJanitza}
                     estadisticas={estadisticas}
                     aliases={ensayoSeleccionado?.aliases}
+                    tiposJanitza={tiposJanitza}
                   />
                 </CollapsibleSection>
               )}
@@ -534,6 +541,7 @@ export function RevisarEnsayoView() {
                 <PanelEstadisticas
                   estadisticas={estadisticas}
                   aliases={ensayoSeleccionado?.aliases}
+                  tiposJanitza={tiposJanitza}
                 />
               </CollapsibleSection>
 

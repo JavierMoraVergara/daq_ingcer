@@ -4,6 +4,17 @@ import { tauriCmd, type ProbarConexionResult } from "../../lib/tauriCommands";
 import adamImg from "../../assets/images/adam.png";
 import janitzaImg from "../../assets/images/janitza.png";
 import metaltexImg from "../../assets/images/md62.png";
+import adl10eImg from "../../assets/images/ADL10-E.png";
+
+// Variables disponibles en el ADL10-E (monofásico)
+const ADL10E_CANALES = [
+  { key: "v1", label: "Tensión (V)" },
+  { key: "c1", label: "Corriente (A)" },
+  { key: "p1", label: "Potencia activa (W)" },
+  { key: "fp1", label: "Factor de potencia" },
+  { key: "f", label: "Frecuencia (Hz)" },
+  { key: "e1", label: "Energía" },
+];
 
 const ADAM_CANALES = [1, 2, 3, 4, 5, 6, 7, 8];
 
@@ -103,7 +114,9 @@ export function SelectorInstrumentos({
           ? 1012
           : inst.tipo === "METALTEX_MC62"
             ? 64
-            : 0;
+            : inst.tipo === "ADL10_E"
+              ? 11
+              : 0;
       const result = await tauriCmd.probarConexion(
         inst.direccion_ip,
         inst.puerto,
@@ -151,6 +164,13 @@ export function SelectorInstrumentos({
         >
           + Metaltex MC62
         </button>
+        <button
+          type="button"
+          onClick={() => addInstrumento("ADL10_E")}
+          className="px-3 py-1.5 text-sm bg-teal-600 text-white rounded hover:bg-teal-700"
+        >
+          + ADL10-E
+        </button>
       </div>
 
       {instrumentos.map((inst, idx) => (
@@ -163,7 +183,9 @@ export function SelectorInstrumentos({
                     ? adamImg
                     : inst.tipo === "METALTEX_MC62"
                       ? metaltexImg
-                      : janitzaImg
+                      : inst.tipo === "ADL10_E"
+                        ? adl10eImg
+                        : janitzaImg
                 }
                 alt={inst.tipo}
                 className="h-12 w-auto object-contain rounded border border-gray-200 p-1 bg-white"
@@ -175,7 +197,9 @@ export function SelectorInstrumentos({
                     ? "Janitza UMG503"
                     : inst.tipo === "METALTEX_MC62"
                       ? "Metaltex MC62"
-                      : "Janitza UMG509"}{" "}
+                      : inst.tipo === "ADL10_E"
+                        ? "ADL10-E"
+                        : "Janitza UMG509"}{" "}
                 #{idx + 1}
               </span>
             </div>
@@ -250,6 +274,23 @@ export function SelectorInstrumentos({
                   { key: "pv", label: "PV (lectura)" },
                   { key: "sv", label: "SV (consigna)" },
                 ].map((c) => (
+                  <label
+                    key={c.key}
+                    className="flex items-center gap-2 text-sm px-2 py-1.5 border border-gray-200 rounded hover:bg-gray-50 cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={inst.canales.includes(c.key)}
+                      onChange={() => toggleCanal(idx, c.key)}
+                      className="rounded"
+                    />
+                    {c.label}
+                  </label>
+                ))}
+              </div>
+            ) : inst.tipo === "ADL10_E" ? (
+              <div className="grid grid-cols-2 gap-2">
+                {ADL10E_CANALES.map((c) => (
                   <label
                     key={c.key}
                     className="flex items-center gap-2 text-sm px-2 py-1.5 border border-gray-200 rounded hover:bg-gray-50 cursor-pointer"

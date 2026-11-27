@@ -2,7 +2,7 @@
 
 ## Descripción
 
-Software de escritorio para adquisición de datos de instrumentos ADAM 4118 (temperatura) y Janitza UMG509-PRO (variables eléctricas) vía Modbus TCP/IP. Interfaz React + Tauri, ejecutable como `.exe` en Windows.
+Software de escritorio para adquisición de datos de instrumentos ADAM 4118 (temperatura), Janitza UMG509-PRO / UMG503 y ADL10-E (variables eléctricas) y controlador Metaltex MC62 vía Modbus TCP/IP. Interfaz React + Tauri, ejecutable como `.exe` en Windows.
 
 ---
 
@@ -145,7 +145,7 @@ src-tauri/target/x86_64-pc-windows-gnu/release/bundle/nsis/DAQ Ingcer_0.1.0_x64-
 
 ### Flujo principal:
 
-1. **Crear instrumentos**: Registrar los ADAM 4118 y Janitza con IP, puerto, slave ID
+1. **Crear instrumentos**: Registrar los ADAM 4118, Janitza, ADL10-E y Metaltex con IP, puerto, slave ID
 2. **Crear esquema**: Seleccionar instrumentos y canales a monitorear
 3. **Crear ensayo**: Basado en un esquema, configurar intervalo y aliases
 4. **Ejecutar adquisición**: El sistema lee los instrumentos en intervalos equiespaciados
@@ -227,6 +227,18 @@ Los archivos JSON nunca se sobreescriben directamente. Si aparece este error, el
 - Registros: Canal 1 → 0, Canal 2 → 1, ..., Canal 8 → 7
 - Tipo: uint16 (0–65535)
 - Fórmula: `°C = (raw / 65535) × 500 - 100`
+
+### ADL10-E (Eléctrico, monofásico)
+
+- Puerto TCP: 502 (por defecto)
+- Función 03 (Read Holding Registers), valores UInt16 escalados
+- Tensión: reg 11 (÷10, V)
+- Corriente: reg 12 (÷100, A)
+- Potencia activa: reg 15 (valor directo, W)
+- Factor de potencia: reg 16 (÷1000)
+- Frecuencia: reg 17 (÷100, Hz)
+- Energía: regs 0 y 1, UINT32 big-endian (reg 0 = palabra alta). Resolución 0,01 kWh (10 Wh por cuenta); se muestra en Wh sin decimales
+- Los regs 13 y 14 están reservados
 
 ### Janitza UMG509-PRO (Eléctrico)
 

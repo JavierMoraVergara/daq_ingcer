@@ -51,8 +51,15 @@ impl CsvWriter {
                 Some(v) => {
                     let es_temperatura = canal.columna.starts_with("ADAM")
                         || canal.columna.starts_with("MTLX");
+                    let es_energia = canal.columna.starts_with("JTZA")
+                        && matches!(
+                            canal.columna.split('_').nth(1).map(|x| x.to_uppercase()).as_deref(),
+                            Some("E1") | Some("E2") | Some("E3")
+                        );
                     if es_temperatura {
                         campos.push(format!("{:.1}", v));
+                    } else if es_energia {
+                        campos.push(format!("{:.0}", v));
                     } else {
                         campos.push(format!("{:.4}", v));
                     }

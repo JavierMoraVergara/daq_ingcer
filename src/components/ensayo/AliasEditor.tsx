@@ -1,12 +1,19 @@
 import type { AliasMap } from "../../types";
+import { nombreColumna } from "../../lib/formato";
 
 interface AliasEditorProps {
   columnas: string[];
   aliases: AliasMap;
   onChange: (aliases: AliasMap) => void;
+  tiposJanitza?: string[];
 }
 
-export function AliasEditor({ columnas, aliases, onChange }: AliasEditorProps) {
+export function AliasEditor({
+  columnas,
+  aliases,
+  onChange,
+  tiposJanitza = [],
+}: AliasEditorProps) {
   const handleChange = (columna: string, value: string) => {
     onChange({ ...aliases, [columna]: value });
   };
@@ -32,7 +39,7 @@ export function AliasEditor({ columnas, aliases, onChange }: AliasEditorProps) {
             {columnas.map((col) => (
               <tr key={col} className="border-t border-gray-100">
                 <td className="px-3 py-1.5 text-gray-700 font-mono text-xs">
-                  {col}
+                  {nombreColumna(col, tiposJanitza)}
                 </td>
                 <td className="px-3 py-1.5">
                   <input

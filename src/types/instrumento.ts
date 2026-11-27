@@ -2,7 +2,8 @@ export type TipoInstrumento =
   | "ADAM4118"
   | "JANITZA_UMG509"
   | "JANITZA_UMG503"
-  | "METALTEX_MC62";
+  | "METALTEX_MC62"
+  | "ADL10_E";
 
 export type TipoTermocupla = "J" | "K" | "T" | "E" | "R" | "S" | "B" | "N";
 

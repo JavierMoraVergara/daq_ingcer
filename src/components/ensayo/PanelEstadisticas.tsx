@@ -1,10 +1,11 @@
 import type { Estadisticas } from "../../lib/estadisticas";
 import type { AliasMap } from "../../types";
-import { formatearValorPorColumna } from "../../lib/formato";
+import { formatearValorPorColumna, nombreColumna } from "../../lib/formato";
 
 interface PanelEstadisticasProps {
   estadisticas: Map<string, Estadisticas>;
   aliases?: AliasMap;
+  tiposJanitza?: string[];
 }
 
 const FILAS: { key: keyof Estadisticas; label: string }[] = [
@@ -19,6 +20,7 @@ const FILAS: { key: keyof Estadisticas; label: string }[] = [
 export function PanelEstadisticas({
   estadisticas,
   aliases = {},
+  tiposJanitza = [],
 }: PanelEstadisticasProps) {
   const columnas = Array.from(estadisticas.keys());
 
@@ -44,7 +46,7 @@ export function PanelEstadisticas({
                 className="text-right px-2 py-1 font-medium text-gray-600 truncate max-w-[100px]"
                 title={col}
               >
-                {aliases[col] || col}
+                {aliases[col] || nombreColumna(col, tiposJanitza)}
               </th>
             ))}
           </tr>
